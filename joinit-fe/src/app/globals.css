@@ -25,3 +25,8 @@ body {
     text-wrap: balance;
   }
 }
+
+.scrollable-container {
+  height: 100vh; /* Full viewport height */
+  overflow-y: auto; /* Enables vertical scrolling */
+}
