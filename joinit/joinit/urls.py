@@ -22,4 +22,5 @@ base_url = "api/v1/"
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path(base_url + 'users/', include('users.urls'))
 ]
