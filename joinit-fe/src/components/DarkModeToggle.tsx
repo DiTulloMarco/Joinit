@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { MdDarkMode, MdLightMode } from 'react-icons/md';
+import { MdDarkMode, MdLightMode } from 'react-icons/md';/*da installare npm install react-icons*/
 
 export default function DarkModeToggle() {
   const [darkMode, setDarkMode] = useState(false);
