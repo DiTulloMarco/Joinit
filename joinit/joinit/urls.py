@@ -20,7 +20,14 @@ from rest_framework import routers
 
 base_url = "api/v1/"
 
+
+from events.views import EventViewSet   # needs to be changed so that event urls are in a separate file (in events/urls.py)
+router = routers.SimpleRouter()
+router.register(r'api/v1/events', EventViewSet, basename="events")
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path(base_url + 'users/', include('users.urls'))
-]
+    
+] + router.urls
