@@ -55,10 +55,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-        #'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
-    ),
+    #'DEFAULT_PERMISSION_CLASSES': (
+    #    'rest_framework.permissions.IsAuthenticated',
+    #    #'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+    #),
 }
 
 SIMPLE_JWT = {
@@ -92,6 +92,10 @@ MIDDLEWARE = [
     
     'corsheaders.middleware.CorsMiddleware',
 ]
+
+
+#CORS_ORIGIN_ALLOW_ALL = False
+#CORS_ORIGIN_WHITELIST = ('localhost:3000',)
 
 ROOT_URLCONF = 'joinit.urls'
 
