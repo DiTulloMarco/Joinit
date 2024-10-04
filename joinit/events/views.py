@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework import status
 
 
+from django.db.models import Q
 from .models import Event
 from .serializers import EventSerializer
 
@@ -20,9 +21,39 @@ class EventViewSet(ModelViewSet):
             events = Event.objects.filter(is_private=False)
         except:
             raise Exception()
+        print(f"Request method: {request.method}")
+        print(f"Request user: {request.user}")
+        print(f"Request data: {request.data}")
         
         serialized_objs = EventSerializer(events, many=True)
         return Response(serialized_objs.data)
+    
+    @action(detail=False, methods=['get'])
+    def search_events(self, request):
+        query = request.query_params.get('query', None)
+
+        if query:
+            events = Event.objects.filter(
+                Q(name__icontains=query) |
+                Q(description__icontains=query) |
+                Q(city__icontains=query)
+            ).order_by('-starting_ts')
+        else:
+            events = Event.objects.all().order_by('-starting_ts')
+
+    # Utilizza la paginazione
+        page = self.paginate_queryset(events)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+   
+   
+        serializer = self.get_serializer(events, many=True)
+        return Response(serializer.data)
+    
+
+    '''intendi la mia??? di che parli?ummm non so'''
 
     """
     def list(self, request):

@@ -12,8 +12,11 @@ from .models import Event
 from .models import Tag
 from .serializers import EventSerializer
 
+
+
+
 class EventsTest(APITestCase):
-    
+
     def setUp(self):
         self.base_url = reverse("events-list") #base url "api/v1/event/"
         
@@ -87,3 +90,56 @@ class EventsTest(APITestCase):
         response = self.client.get(self.base_url, format="json")
         print("\nDEBUG: events remaining (there should be none) response:\n", response)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    
+    
+
+    def setUp(self):
+        self.base_url = reverse("events-list")
+        self.search_url = reverse("events-search-events")
+        
+
+        self.event = Event.objects.create(
+            name="Concerto di Musica",
+            description="Concerto jazz in piazza",
+            city="Roma",
+            country="Italia",
+            region="Lazio",
+            street_name="Via Roma",
+            house_number=10,
+            price=10.00,
+            is_private=False,
+            starting_ts=datetime(year=2024, month=10, day=10, hour=18, minute=30),
+            ending_ts=datetime(year=2024, month=10, day=10, hour=22, minute=0),
+        )
+
+        self.event = Event.objects.create(
+            name="Concerto",
+            description="Concerto musica in piazza",
+            city="Roma",
+            country="Italia",
+            region="Lazio",
+            street_name="Via Roma",
+            house_number=10,
+            price=10.00,
+            is_private=False,
+            starting_ts=datetime(year=2024, month=10, day=10, hour=18, minute=30),
+            ending_ts=datetime(year=2024, month=10, day=10, hour=22, minute=0),
+        )
+
+    def test_search_events(self):
+        # Test per cercare un evento con la parola chiave 'Musica'
+        search_query = 'musica'
+        print(f"\nCerco eventi con la parola chiave: {search_query}")
+        response = self.client.get(f'{self.search_url}?query={search_query}')
+        print(f"Eventi trovati: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)
+        self.assertIn("Concerto di Musica", response.data[0]["name"])
+
+        # Test per una ricerca vuota, restituisce tutti gli eventi 
+        print("\nCerco eventi senza query")
+        response = self.client.get(self.search_url)
+        print(f"Eventi trovati senza query: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)
