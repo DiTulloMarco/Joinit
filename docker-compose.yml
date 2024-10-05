@@ -41,12 +41,12 @@ services:
     container_name: joinit-fe
     build: joinit-fe/.
     restart: always
-    env_file:
-      - .env
+    environment:
+      - CHOKIDAR_USEPOLLING=true
     volumes:
-      - ./joinit:/joinit-fe
+      - ./joinit-fe:/joinit
     ports:
-      - 3000:3000
+      - 3001:3000
     depends_on:
       - api
     networks:

@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny  #, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework import status
 
+from rest_framework.pagination import PageNumberPagination
 
 from .models import Event
 from .serializers import EventSerializer
@@ -21,8 +22,14 @@ class EventViewSet(ModelViewSet):
         except:
             raise Exception()
         
-        serialized_objs = EventSerializer(events, many=True)
-        return Response(serialized_objs.data)
+        page = self.paginate_queryset(events)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(events, many=True)
+        return Response(serializer.data)
+
 
     """
     def list(self, request):

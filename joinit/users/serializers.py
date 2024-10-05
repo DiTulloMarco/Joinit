@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, StringRelatedField
 from .models import CustomUser
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -14,9 +14,10 @@ class UserSerializer(ModelSerializer):
         return user
     
 class UserEditSerializer(ModelSerializer):
+    events = StringRelatedField(many=True)
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'birthDate', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation']
+        fields = ['id', 'first_name', 'last_name', 'birthDate', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation', 'events']
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

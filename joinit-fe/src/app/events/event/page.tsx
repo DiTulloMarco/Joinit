@@ -1,9 +1,10 @@
+'use server';
 import React from 'react';
-import { MioEvent } from '@types';
+import { MyEvent } from '@types';
 import EventCard from '@components/EventCard';
 
-export default function EventPage() {
-  const eventDetails: MioEvent = {
+export default async function EventPage() {
+  const eventDetails: MyEvent = {
     id: 1,
     title: "Evento Dettagliato",
     desc: "Descrizione dettagliata dell'evento",

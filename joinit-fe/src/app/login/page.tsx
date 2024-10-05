@@ -1,10 +1,10 @@
+'use server';
 import React from 'react';
 
-export default function Login() {
+export default async function Login() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:from-gray-800 dark:to-gray-900">
       <div className="bg-white dark:bg-gray-800 p-10 rounded-xl shadow-lg w-96">
-        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-gray-100">Accedi</h1>
         <form className="space-y-6">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -32,26 +32,21 @@ export default function Login() {
               required
             />
           </div>
-          <button
-            type="submit"
-            className="w-full py-2 mt-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <button 
+           className="w-full flex justify-center py-2 px-4 border border-gray-400 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-2"
           >
             Accedi
           </button>
         </form>
         <div className="text-center mt-6">
-          <p className="text-sm text-gray-600 dark:text-gray-400">Non hai un account?</p>
-          <a
-            href="/register"
-            className="inline-block mt-2 text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Registrati
-            </a>
+          <p className="text-sm text-gray-600 dark:text-gray-400 pb-2">Non hai un account?</p>
         </div>
-        <div className="text-center mt-6">
-          <a href="/" className="w-full flex justify-center py-2 px-4 border border-gray-400 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-2">
-            Torna alla Home
-          </a>
+        <div
+           className="w-full flex justify-center py-2 px-4 border border-gray-400 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-2"
+          >
+            <a href="/register" >
+              Registrati
+            </a>
         </div>
       </div>
     </div>
