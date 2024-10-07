@@ -38,12 +38,13 @@ class EventViewSet(ModelViewSet):
         city = request.query_params.get('city', None)
         price_min = request.query_params.get('price_min', None)
         price_max = request.query_params.get('price_max', None)
+        tags = request.query_params.getlist('tags', None)
 
-        # Filtra per nome, se fornito
+        # Filtra per nome
         if name:
             filters &= Q(name__icontains=name)
 
-        # Filtra per descrizione, se fornito
+        # Filtra per descrizione
         if description:
             filters &= Q(description__icontains=description)
     
@@ -51,7 +52,7 @@ class EventViewSet(ModelViewSet):
         if city:
             filters &= Q(city__icontains=city)
 
-        # Filtra per intervallo di prezzo, se forniti
+        # Filtra per intervallo di prezzo
         if price_min and price_max:
             filters &= Q(price__gte=price_min, price__lte=price_max)
         elif price_min:
@@ -63,6 +64,9 @@ class EventViewSet(ModelViewSet):
         # Add the category filter
         if category:
             filters &= Q(category=category)
+
+        if tags:
+            filters &= Q(tags__name__in=tags)
 
 
         # Apply the filters to the queryset
@@ -76,9 +80,7 @@ class EventViewSet(ModelViewSet):
 
         serialized_objs = self.get_serializer(events, many=True)
         return Response(serialized_objs.data)
-    
-
-    '''intendi la mia??? di che parli?ummm non so'''
+        
 
     """
     def list(self, request):

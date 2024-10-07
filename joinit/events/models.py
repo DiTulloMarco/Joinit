@@ -1,7 +1,12 @@
 from django.db import models
 
 class Tag(models.Model):
-    name = models.CharField(max_length=30, primary_key=True)
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=30, unique=True) 
+
+    def __str__(self):
+        return self.name
+
 
 #class Category(models.Model):
 #    name = models.CharField(max_length=30, primary_key=True)
@@ -47,7 +52,7 @@ class Event(models.Model):
     # To get the list of category choices use the automatically created method: get_category_display()
     # This methods returns the human readable form of the choices (the string after : )
 
-    tags     = models.ManyToManyField(Tag, default=[], blank=True)
+    tags     = models.ManyToManyField(Tag, blank=True)
     
     # Address
     country     = models.CharField(max_length=100) # blank=False, null=False
