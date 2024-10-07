@@ -1,8 +1,7 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework import routers
 
-from .views import CreateUserView, UserViewSet, CustomTokenObtainPairView
+from .views import CreateUserView, UserViewSet, CustomTokenObtainPairView, TokenRefreshView
 
 router = routers.SimpleRouter()
 router.register(r'', UserViewSet)

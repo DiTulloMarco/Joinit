@@ -102,7 +102,7 @@ ROOT_URLCONF = 'joinit.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [Path(BASE_DIR, 'joinit/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

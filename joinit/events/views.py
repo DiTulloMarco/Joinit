@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny  #, IsAuthenticated
 from rest_framework.decorators import action
-from rest_framework import status
+from rest_framework.schemas.openapi import AutoSchema
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -13,6 +13,7 @@ class EventViewSet(ModelViewSet):
     serializer_class = EventSerializer
     queryset = Event.objects.all()
     permission_classes = [AllowAny]
+    schema = AutoSchema(tags=['Events'])
 
     # returns all public events
     @action(detail=False, methods=['get'])

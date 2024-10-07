@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
+from rest_framework.schemas import get_schema_view
+from django.views.generic import TemplateView
 
 base_url = "api/v1/"
 
@@ -28,6 +30,8 @@ router.register(r'api/v1/events', EventViewSet, basename="events")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('schema/', get_schema_view(title="Joinit API"), name="openapi-schema"),
+    path('', TemplateView.as_view(template_name="docs.html", extra_context={"schema_url": 'openapi-schema'}), name="swagger-ui"),
     path(base_url + 'users/', include('users.urls'))
     
 ] + router.urls

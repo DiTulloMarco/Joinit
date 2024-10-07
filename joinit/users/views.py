@@ -1,12 +1,12 @@
-from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework import status
 from rest_framework.generics import CreateAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework import status
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.decorators import action
+from rest_framework.schemas.openapi import AutoSchema
 
 from django.db.models import Q
 
@@ -20,6 +20,7 @@ class CreateUserView(CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
+    schema = AutoSchema(tags=['Users'])
 
     def create(self, request):
         response = super().create(request)
@@ -31,11 +32,13 @@ class CreateUserView(CreateAPIView):
   
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    schema = AutoSchema(tags=['Users'])
     serializer_class = CustomTokenObtainPairSerializer
 
 class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
+    schema = AutoSchema(tags=['Users'])
 
     @action(detail=False, methods=['get'])
     def search(self, request, *args, **kwargs):
@@ -77,3 +80,5 @@ class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
         serializer = EventSerializer(user_events, many=True)
         return Response(serializer.data)
     
+class TokenRefreshView(TokenRefreshView):
+    schema = AutoSchema(tags=['Users'])
