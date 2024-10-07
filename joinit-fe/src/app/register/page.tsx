@@ -1,28 +1,146 @@
-'use server';
-import React from 'react';
+'use client';
+import React, { useEffect, useContext, useState } from 'react';
+import { useForm, SubmitHandler, Controller } from 'react-hook-form';
+import axios from 'axios';
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
-export default async function Register() {
+import { RegisterFormType } from '@/types/RegisterFormType';
+import { useRouter } from 'next/navigation';
+import { AppRoutes } from '@/enums/AppRoutes';
+
+const url = process.env.API_URL
+
+
+export default function Register() {
+
+  const { control, register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormType>()
+    const [passwordCriteria, setPasswordCriteria] = useState({
+        length: false,
+        specialChar: false,
+    });
+    const [loading, setLoading] = useState<boolean>(false);
+    const router = useRouter();
+    const password = watch('password');
+    const [showPassword, setShowPassword] = useState(false);
+
+    const handleClickShowPassword = () => setShowPassword((show) => !show);
+
+    useEffect(() => {
+        if (password) {
+            setPasswordCriteria({
+                length: password.length >= 8,
+                specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+            });
+        }
+    }, [password]);
+
+    const onSubmit: SubmitHandler<RegisterFormType> = async (data) => {
+        try {
+            setLoading(true);
+            const response = await axios.post(`${url}/users/register`, data);
+            if (response.data.token) {
+                console.log(response.data);
+                const user = response.data.user;
+                const userId = user.id;
+                const accessToken = response.data.token;
+                localStorage.setItem('userId', userId.toString());
+                localStorage.setItem('authToken', accessToken.access);
+                console.log( 'register success');
+            }
+            setLoading(false);
+            router.push(AppRoutes.LOGIN);
+        }
+        catch (error) {
+            console.error('errore', error);
+            console.error( 'register failed');
+            setLoading(false);
+        }
+    }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:from-gray-800 dark:to-gray-900">
+    <div className="min-h-screen flex items-center justify-center text-black bg-white dark:from-gray-800 dark:to-gray-900">
       <div className="bg-white dark:bg-gray-800 p-10 rounded-xl shadow-lg w-96">
-        <form className="space-y-6">
-          {['nome', 'cognome', 'email', 'password', 'conferma_password'].map((field, index) => (
-            <div key={index}>
-              <label htmlFor={field} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {field.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </label>
-              <input
-                type={field.includes('password') ? 'password' : 'text'}
-                id={field}
-                name={field}
-                placeholder={field.includes('password') ? '********' : `Inserisci il tuo ${field.replace('_', ' ')}`}
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100"
-                required
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <div>
+          <label htmlFor="first_name" className="form-label">
+            Nome
+          </label>
+          <input
+            type="text"
+            id="first_name"
+            placeholder="Inserisci il tuo nome"
+            className="primary-input"
+            defaultValue=""
+            {...register('first_name')}
+            required
+          />
+          </div>
+          <div>
+          <label htmlFor="last_name" className="form-label">
+            Cognome
+          </label>
+          <input
+            type="text"
+            id="last_name"
+            placeholder="Inserisci il tuo cognome"
+            className="primary-input"
+            defaultValue=""
+            {...register('last_name')}
+            required
+          />
+          </div>
+          <div>
+            <label htmlFor="email" className="form-label">
+              Email
+            </label>
+            <input
+              type="text"
+              id="email"
+              placeholder="Inserisci la tua email"
+              className="primary-input"
+              defaultValue=""
+              {...register('email')}
+              required
               />
-            </div>
-          ))}
+          </div>
+          <Controller
+            name="password"
+            control={control}
+            defaultValue=''
+            rules={{
+              required: { value: true, message: 'La password è obbligatoria' },
+              minLength: { value: 8, message: 'La password deve contenere almeno 8 caratteri' },
+              pattern: { value: /[!@#$%^&*(),.?":{}|<>]/, message: 'La password deve contenere almeno un carattere speciale' }
+          }}
+          render={({ field, fieldState: { error } }) => (
+              <div>
+                <label htmlFor="password" className="form-label">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    placeholder="Inserisci la tua password"
+                    className="primary-input"
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
+                    onClick={handleClickShowPassword}
+                  >
+                    {showPassword ? <FaEye /> : <FaEyeSlash />}
+                  </button>
+                </div>
+                {error && <p className="text-red-500 text-xs mt-1">{error.message}</p>}
+              </div>
+
+                )}
+              />
           <button 
-           className="w-full flex justify-center py-2 px-4 border border-gray-400 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-2"
+            type="submit"
+            className="primary-button mt-2"
           >
             Registrati
           </button>
@@ -30,13 +148,11 @@ export default async function Register() {
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600 dark:text-gray-400 pb-2">Hai già un account?</p>
         </div>
-        <div
-           className="w-full flex justify-center py-2 px-4 border border-gray-400 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-2"
+        <a href="/login"
+           className="primary-button mt-2"
           >
-            <a href="/login" >
-              Accedi
-            </a>
-        </div>
+          Accedi
+        </a>
       </div>
     </div>
   );

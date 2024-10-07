@@ -1,7 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    env: {
+        API_URL: "http://localhost:8001/api/v1"
+    },
     images: {
-        domains: ['via.placeholder.com'],
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'via.placeholder.com',
+            },
+        ]
     },
 };
 

@@ -39,12 +39,17 @@ services:
 
   frontend:
     container_name: joinit-fe
-    build: joinit-fe/.
+    build: 
+      context: ./joinit-fe
+      dockerfile: Dockerfile
     restart: always
-    environment:
-      - CHOKIDAR_USEPOLLING=true
+    command: npm run dev
     volumes:
       - ./joinit-fe:/joinit
+      # Required to not break node modules.
+      - /usr/src/web/node_modules
+      # Required for next to do it's thing.
+      - /usr/src/web/.next
     ports:
       - 3001:3000
     depends_on:

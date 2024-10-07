@@ -2,6 +2,7 @@
 import React from 'react';
 import Navbar from '../components/Navbar';
 import Image from 'next/image';
+
 export default async function Home() {
   return (
     <div className="min-h-screen bg-white dark:from-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 pt-16">
@@ -20,14 +21,17 @@ export default async function Home() {
           <h1 className="text-5xl font-extrabold text-gray-800 dark:text-gray-100">Benvenuto su Joinit</h1>
         </div>
         <p className="text-xl text-gray-600 dark:text-gray-400 mt-4">Crea e partecipa agli eventi più coinvolgenti</p>
-        <div className="mt-8 flex justify-center">
+        <div className="w-1/4 mt-8 flex justify-center">
           <input
             type="email"
             placeholder="you@example.com"
-            className="px-4 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 focus:outline-none dark:bg-gray-700 dark:text-gray-100"
+            className="primary-input !rounded-r-none"
           />
-          <button className="bg-blue-600 dark:bg-blue-500 text-white px-6 py-2 rounded-r-md hover:bg-blue-700 transition">
-            Iscriviti
+          <button 
+            type="submit"
+            className="primary-button !w-1/2 !mt-1 !rounded-l-none !px-0"
+          >
+            Registrati
           </button>
         </div>
       </section>

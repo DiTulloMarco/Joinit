@@ -1,6 +1,6 @@
 'use server';
 import React from 'react';
-import { MyEvent } from '@types';
+import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
 
 export default async function EventPage() {
