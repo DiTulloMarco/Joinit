@@ -1,13 +1,13 @@
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import AllowAny  #, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework import status
 
 
 from django.db.models import Q
-from .models import Event
-from .serializers import EventSerializer
+from .models import Event, Participation
+from .serializers import EventSerializer, ParticipationSerializer
 
 class EventViewSet(ModelViewSet):
     serializer_class = EventSerializer
@@ -27,6 +27,22 @@ class EventViewSet(ModelViewSet):
         
         serialized_objs = EventSerializer(events, many=True)
         return Response(serialized_objs.data)
+    
+         # Action to allow users to participate in an event
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def participate(self, request, pk=None):
+        event = self.get_object()
+        participation, created = Participation.objects.get_or_create(user=request.user, event=event)
+        if created:
+            return Response({'status': 'You have successfully joined the event.'}, status=status.HTTP_201_CREATED)
+        return Response({'status': 'You are already participating in this event.'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny])
+    def participants(self, request, pk=None):
+        event = self.get_object()
+        participants = Participation.objects.filter(event=event)
+        serializer = ParticipationSerializer(participants, many=True)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def search_events(self, request):
@@ -80,6 +96,7 @@ class EventViewSet(ModelViewSet):
 
         serialized_objs = self.get_serializer(events, many=True)
         return Response(serialized_objs.data)
+    
         
 
     """

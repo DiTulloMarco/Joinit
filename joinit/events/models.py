@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class Tag(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -6,8 +7,7 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
-
-
+    
 #class Category(models.Model):
 #    name = models.CharField(max_length=30, primary_key=True)
 
@@ -81,3 +81,15 @@ class Event(models.Model):
 
     # We mark the event as cancelled here
     cancelled = models.BooleanField(default=False, null=False, blank=True)
+
+
+class Participation(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    participation_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'event')  # Ensure that the same user cannot participate twice
+
+    def __str__(self):
+        return f'{self.user} joined {self.event}'
