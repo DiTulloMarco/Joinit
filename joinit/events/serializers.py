@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Event, Tag, Participation
 from users.serializers import UserSerializer 
+from rest_framework.reverse import reverse 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,6 +23,7 @@ class ParticipationSerializer(serializers.ModelSerializer):
 class EventSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     participations = serializers.SerializerMethodField()
+    shareable_link = serializers.SerializerMethodField() 
 
     class Meta:
         model = Event
@@ -29,6 +31,10 @@ class EventSerializer(serializers.ModelSerializer):
 
     def get_participations(self, obj):
         return ParticipationSerializer(obj.participation_set.all(), many=True).data
+    
+    def get_shareable_link(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(reverse('events-detail', args=[obj.id]))
 
     def create(self, validated_data):
         tags_data = validated_data.pop('tags', [])

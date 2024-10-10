@@ -97,6 +97,16 @@ class EventViewSet(ModelViewSet):
         serialized_objs = self.get_serializer(events, many=True)
         return Response(serialized_objs.data)
     
+    @action(detail=True, methods=['delete'], permission_classes=[IsAuthenticated])
+    def cancel_participation(self, request, pk=None):
+        event = self.get_object()
+        try:
+            participation = Participation.objects.get(user=request.user, event=event)
+            participation.delete()  # Remove participation
+            return Response({'status': 'Your participation has been cancelled.'}, status=status.HTTP_204_NO_CONTENT)
+        except Participation.DoesNotExist:
+            return Response({'error': 'You are not participating in this event.'}, status=status.HTTP_400_BAD_REQUEST)
+    
         
 
     """
