@@ -19,6 +19,7 @@ class EventViewSet(ModelViewSet):
     def list_public(self, request):
         try:
             events = Event.objects.filter(is_private=False)
+            events = Event.objects.filter(cancelled=False)
         except:
             raise Exception()
         print(f"Request method: {request.method}")
@@ -30,7 +31,7 @@ class EventViewSet(ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def search_events(self, request):
-        filters = Q()  # Inizializza il filtro vuoto
+        filters = Q(is_private=False, cancelled=False) 
 
         category = request.query_params.get('category', None)
         name = request.query_params.get('name', None)
