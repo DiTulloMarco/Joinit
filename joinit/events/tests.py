@@ -5,13 +5,14 @@ from rest_framework.reverse import reverse
 from rest_framework import status
 
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 from datetime import datetime
 
-from .models import Event
+from .models import Event, Participation ,Rating
 from .models import Tag
 from .serializers import EventSerializer
-
+from decimal import Decimal
 
 
 
@@ -135,7 +136,7 @@ class EventsTest(APITestCase):
         print(f"Eventi trovati: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreater(len(response.data), 0)
-        self.assertIn("Concerto di Musica", response.data[0]["name"])
+        self.assertIn("Concerto di Musica", response.data['results'][0]["name"])
 
         # Test per una ricerca vuota, restituisce tutti gli eventi 
         print("\nCerco eventi senza query")
@@ -143,3 +144,90 @@ class EventsTest(APITestCase):
         print(f"Eventi trovati senza query: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreater(len(response.data), 0)
+
+
+
+class RatingReviewTest(APITestCase):
+
+    def setUp(self):
+        # Create user
+        self.user = get_user_model().objects.create_user(
+            email='testuser@example.com', 
+            password='password123'
+        )
+        self.client.force_authenticate(user=self.user)
+
+        # Create event
+        self.event = Event.objects.create(
+            name="Test Event",
+            description="This is a test event.",
+            city="Rome",
+            country="Italy",
+            region="Lazio",
+            street_name="Test Street",
+            house_number=10,
+            price=20.00,
+            starting_ts=datetime(2024, 10, 15, 18, 0),
+            ending_ts=datetime(2024, 10, 15, 22, 0)
+        )
+
+        # Create participation for the event
+        Participation.objects.create(user=self.user, event=self.event)
+
+    def test_create_rating(self):
+        """Test that a user can successfully create a rating for an event."""
+        url = reverse('events-rate-event', kwargs={'pk': self.event.id})
+        data = {
+            'rating': 4.5,
+            'review': 'Great event!'
+        }
+        print(f"Posting data to {url}: {data}")
+
+        response = self.client.post(url, data, format='json')
+        print(f"Response: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, msg=f"Response errors: {response.data}")
+        self.assertEqual(Rating.objects.count(), 1)
+        self.assertEqual(Rating.objects.first().rating, 4.5)
+
+    def test_duplicate_rating(self):
+        """Test that a user cannot rate an event twice."""
+        # First rating
+        Rating.objects.create(user=self.user, event=self.event, rating=4.0)
+        
+        # Second attempt to rate the same event
+        url = reverse('events-rate-event', kwargs={'pk': self.event.id})
+        data = {
+            'rating': 3.5,
+            'review': 'Changed my mind!'
+        }
+
+        print(f"Posting data to {url}: {data}")
+
+        response = self.client.post(url, data, format='json')
+        print(f"Response: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response.data)
+        self.assertEqual(response.data['detail'], 'You have already rated this event.')
+
+    def test_update_rating(self):
+        """Test that a user can update their rating for an event."""
+        # Create a rating
+        Rating.objects.create(user=self.user, event=self.event, rating=4.0)
+
+        # Update the rating
+        url = reverse('events-update-rating', kwargs={'pk': self.event.id})
+        data = {
+            'rating': 3.5,
+            'review': 'Changed my mind, it was okay.'
+        }
+
+        print(f"Posting data to {url}: {data}")
+
+        response = self.client.put(url, data, format='json')
+        print(f"Response: {response.data}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK, msg=f"Response errors: {response.data}")
+
+        # Verify that the rating is updated
+        updated_rating = Rating.objects.get(event=self.event, user=self.user)
+        self.assertEqual(updated_rating.rating, 3.5)
+        self.assertEqual(updated_rating.review, 'Changed my mind, it was okay.')
