@@ -1,17 +1,18 @@
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.generics import CreateAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import status
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.decorators import action
+from rest_framework.schemas import AutoSchema
 
 from django.db.models import Q
 
 from .models import CustomUser
-from .serializers import UserSerializer, UserEditSerializer, CustomTokenObtainPairSerializer
+from .serializers import UserSerializer, UserEditSerializer, CustomTokenObtainPairSerializer, CustomTokenRefreshSerializer
 from events.serializers import EventSerializer
 
 # Create your views here.
@@ -32,6 +33,11 @@ class CreateUserView(CreateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    schema = AutoSchema(tags=['Users'])
+    serializer_class = CustomTokenRefreshSerializer
 
 class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
     queryset = CustomUser.objects.all()

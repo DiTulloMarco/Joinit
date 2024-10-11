@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer, StringRelatedField
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import AccessToken
 from .models import CustomUser
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(ModelSerializer):
     class Meta:
@@ -25,4 +26,27 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super(CustomTokenObtainPairSerializer, self).validate(attrs)
         data.update({'user': UserSerializer(self.user).data})
         return data
+
+class CustomTokenRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        # Estrai il token di accesso aggiornato
+        access_token = data.get('access')
+
+        if access_token:
+            # Decodifica il token di accesso per ottenere l'ID utente
+            access_token_obj = AccessToken(access_token)
+            user_id = access_token_obj.get('user_id')
+
+            # Recupera l'utente dal database
+            try:
+                user = CustomUser.objects.get(id=user_id)
+                # Aggiungi i dati dell'utente alla response
+                data.update({'user': UserSerializer(user).data})
+            except CustomUser.DoesNotExist:
+                data.update({'user': None})
+
+        return data
+
 
