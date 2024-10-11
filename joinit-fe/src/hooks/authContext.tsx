@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (typeof window !== 'undefined'){
       const token = sessionStorage.getItem('authToken');
-      const storedUserId = localStorage.getItem('userId');
+      const storedUserId = sessionStorage.getItem('userId');
       setAuthToken(token);
       setUserId(storedUserId);
       setIsAuthenticated(!!token);
@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (token: string, userId: string) => {
     if (typeof window !== 'undefined'){
       sessionStorage.setItem('authToken', token);
-      localStorage.setItem('userId', userId);
+      sessionStorage.setItem('userId', userId);
       setAuthToken(token);
       setUserId(userId);
       setIsAuthenticated(true);
@@ -37,8 +37,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     if (typeof window !== 'undefined'){
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userId');
+      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('userId');
       setAuthToken(null);
       setUserId(null);
       setIsAuthenticated(false);

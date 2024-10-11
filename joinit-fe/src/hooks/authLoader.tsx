@@ -14,10 +14,11 @@ const AuthLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const refresh = localStorage.getItem('refreshToken');
     if (token || refresh) {
       if(!token){
-        const response = axios.post(`${url}/users/token/refresh`, {refresh});
+        const response = axios.post(`${url}/users/token_refresh/`, {refresh});
         response.then((data) => {
           if (data.data.access) {
             sessionStorage.setItem('authToken', data.data.access);
+            sessionStorage.setItem('userId', data.data.user.id);
           }
         });
       }

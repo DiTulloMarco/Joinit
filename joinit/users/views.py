@@ -7,11 +7,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.decorators import action
 from rest_framework.schemas.openapi import AutoSchema
-
 from django.db.models import Q
 
 from .models import CustomUser
-from .serializers import UserSerializer, UserEditSerializer, CustomTokenObtainPairSerializer
+from .serializers import UserSerializer, UserEditSerializer, CustomTokenObtainPairSerializer, CustomTokenRefreshSerializer
 from events.serializers import EventSerializer
 
 # Create your views here.
@@ -34,6 +33,11 @@ class CreateUserView(CreateAPIView):
 class CustomTokenObtainPairView(TokenObtainPairView):
     schema = AutoSchema(tags=['Users'])
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    schema = AutoSchema(tags=['Users'])
+    serializer_class = CustomTokenRefreshSerializer
 
 class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
     queryset = CustomUser.objects.all()
