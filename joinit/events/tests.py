@@ -5,11 +5,11 @@ from rest_framework.reverse import reverse
 from rest_framework import status
 
 from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
 from datetime import datetime
 
-from .models import Event
-from .models import Tag
+from .models import Event,Tag,Participation
 from .serializers import EventSerializer
 
 
@@ -143,3 +143,40 @@ class EventsTest(APITestCase):
         print(f"Eventi trovati senza query: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreater(len(response.data), 0)
+
+class ParticipationTest(APITestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            email='testuser@example.com',
+            password='password123'
+        )
+        self.client.force_authenticate(user=self.user)
+        
+        # Create a test event
+        self.event = Event.objects.create(
+            name="Test Event",
+            description="A test event",
+            price=0,
+            category=Event.NO_CATEGORY,
+            country="Italy",
+            city="Rome",
+            region="Lazio",
+            street_name="Via Roma",
+            house_number=100,
+            starting_ts=datetime(2024, 10, 15, 18, 0, 0),
+            ending_ts=datetime(2024, 10, 15, 22, 0, 0),
+        )
+        
+        self.participate_url = reverse('events-participate', kwargs={'pk': self.event.id})
+        self.cancel_url = reverse('events-cancel-participation', kwargs={'pk': self.event.id})
+
+    def test_participation_and_cancellation(self):
+        participate_response = self.client.post(self.participate_url)
+        print(f"Response on participate: {participate_response.data}")
+        
+        self.assertEqual(Participation.objects.count(), 1)
+
+        cancel_response = self.client.delete(self.cancel_url)
+        print(f"Response on cancel participation: {cancel_response.data}")
+        self.assertEqual(cancel_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Participation.objects.count(), 0)
