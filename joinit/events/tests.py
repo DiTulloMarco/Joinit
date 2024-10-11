@@ -173,7 +173,6 @@ class ParticipationTest(APITestCase):
     def test_participation_and_cancellation(self):
         participate_response = self.client.post(self.participate_url)
         print(f"Response on participate: {participate_response.data}")
-        
         self.assertEqual(Participation.objects.count(), 1)
 
         cancel_response = self.client.delete(self.cancel_url)
