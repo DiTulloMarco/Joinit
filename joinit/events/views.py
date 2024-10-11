@@ -6,9 +6,10 @@ from rest_framework.schemas.openapi import AutoSchema
 
 from rest_framework.pagination import PageNumberPagination
 
+from decimal import Decimal
 from django.db.models import Q
-from .models import Event, Participation
-from .serializers import EventSerializer, ParticipationSerializer
+from .models import Event, Participation,Rating
+from .serializers import EventSerializer, ParticipationSerializer, RatingSerializer
 
 class EventViewSet(ModelViewSet):
     serializer_class = EventSerializer
@@ -51,6 +52,66 @@ class EventViewSet(ModelViewSet):
         participants = Participation.objects.filter(event=event)
         serializer = ParticipationSerializer(participants, many=True)
         return Response(serializer.data)
+    
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def rate_event(self, request, pk=None):
+        event = self.get_object()
+
+        # Ensure the user has participated in the event
+        participation = Participation.objects.filter(user=request.user, event=event).exists()
+        if not participation:
+            return Response({'detail': 'You cannot rate an event you did not participate in.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check if the user has already rated the event
+        existing_rating = Rating.objects.filter(user=request.user, event=event).first()
+        if existing_rating:
+            return Response({'detail': 'You have already rated this event.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        rating_data = {
+        'rating': request.data.get('rating'),
+        'review': request.data.get('review', '')  # Review is optional
+        }
+
+        # Create a new rating
+        serializer = RatingSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, event=event)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Add a method to list event ratings
+    @action(detail=True, methods=['get'], permission_classes=[AllowAny])
+    def ratings(self, request, pk=None):
+        event = self.get_object()
+        ratings = Rating.objects.filter(event=event)
+        serializer = RatingSerializer(ratings, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['put'], permission_classes=[IsAuthenticated])
+    def update_rating(self, request, pk=None):
+        event = self.get_object()
+
+    # Ensure the user has already rated the event
+        existing_rating = Rating.objects.filter(user=request.user, event=event).first()
+        if not existing_rating:
+            return Response({'detail': 'You have not rated this event yet.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Parse and validate the updated rating and review values
+        rating_data = {
+            'rating': request.data.get('rating'),
+            'review': request.data.get('review', existing_rating.review)  # Default to the previous review if not provided
+        }
+
+        # Update the existing rating
+        serializer = RatingSerializer(existing_rating, data=rating_data, partial=True)  # Use partial update
+        if serializer.is_valid():
+            serializer.save()
+
+            # Indicate the rating has been updated
+            return Response({'detail': 'Rating updated successfully.', 'rating': serializer.data}, status=status.HTTP_200_OK)
+    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['get'])
     def search_events(self, request):
