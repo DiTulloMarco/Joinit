@@ -132,9 +132,7 @@ class EventViewSet(ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def search_events(self, request):
-
-        
-        filters = Q(is_private=False, cancelled=False)  
+        filters = Q(is_private=False, cancelled=False)
 
         category = request.query_params.get('category', None)
         name = request.query_params.get('name', None)
