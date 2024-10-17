@@ -20,7 +20,6 @@ class CustomUser(AbstractUser):
     nation = models.CharField(_('Nation'), max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now=True)
-    events = models.ManyToManyField('events.Event', blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']

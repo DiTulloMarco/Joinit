@@ -4,4 +4,5 @@ export enum AppRoutes {
     RESET_PASSWORD = '/reset-password',
     SET_NEW_PASSWORD = '/set-new-password/:userId/:authToken',
     EVENTS = '/events',
+    EVENT = '/events/',
 }

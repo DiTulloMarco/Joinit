@@ -1,7 +1,7 @@
 export type MyEvent = {
     id: number;
-    title: string;
-    desc: string;
-    date?: string;
-    location?: string;
+    name: string;
+    description: string;
+    starting_ts: string;
+    place: string;
   }

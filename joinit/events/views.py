@@ -1,14 +1,14 @@
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.schemas.openapi import AutoSchema
 
 from django.db.models import Q
-from .models import Event, Participation,Rating
-from .serializers import EventSerializer, ParticipationSerializer, RatingSerializer
+from .models import Event, Rating, EventType
+from .serializers import EventSerializer, RatingSerializer
 
-from rest_framework.permissions import IsAdminUser
 
 
 
@@ -18,7 +18,12 @@ class EventViewSet(ModelViewSet):
     permission_classes = [AllowAny]
     schema = AutoSchema(tags=['Events'])
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAdminUser])
+    @action(detail=False, methods=['GET'])
+    def get_event_types(self, request):
+        event_types_choices = [choice[0] for choice in EventType.choices]
+        return Response(event_types_choices, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['GET'], permission_classes=[IsAdminUser])
     def view_all_events(self, request):
         # As an admin, return all events, including private and cancelled ones
         events = Event.objects.all()  # No filter for private or cancelled events
@@ -26,16 +31,12 @@ class EventViewSet(ModelViewSet):
         return Response(serializer.data)
     
     # returns all public events
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['GET'])
     def list_public(self, request):
         try:
-            events = Event.objects.filter(is_private=False)
-            events = Event.objects.filter(cancelled=False)
+            events = Event.objects.filter(is_private=False, cancelled=False)
         except:
             raise Exception()
-        print(f"Request method: {request.method}")
-        print(f"Request user: {request.user}")
-        print(f"Request data: {request.data}")
         
         page = self.paginate_queryset(events)
         if page is not None:
@@ -47,7 +48,7 @@ class EventViewSet(ModelViewSet):
 
 
     # Action to allow users to participate in an event
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
     def participate(self, request, pk=None):
         event = self.get_object()
         if not user.can_join:
@@ -58,7 +59,7 @@ class EventViewSet(ModelViewSet):
             return Response({'status': 'You have successfully joined the event.'}, status=status.HTTP_201_CREATED)
         return Response({'status': 'You are already participating in this event.'}, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'], permission_classes=[AllowAny])
+    @action(detail=True, methods=['GET'], permission_classes=[AllowAny])
     def participants(self, request, pk=None):
         event = self.get_object()
         participants = Participation.objects.filter(event=event)
@@ -66,7 +67,7 @@ class EventViewSet(ModelViewSet):
         return Response(serializer.data)
     
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
     def rate_event(self, request, pk=None):
         event = self.get_object()
         if not user.can_comment:
@@ -96,14 +97,14 @@ class EventViewSet(ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # Add a method to list event ratings
-    @action(detail=True, methods=['get'], permission_classes=[AllowAny])
+    @action(detail=True, methods=['GET'], permission_classes=[AllowAny])
     def ratings(self, request, pk=None):
         event = self.get_object()
         ratings = Rating.objects.filter(event=event)
         serializer = RatingSerializer(ratings, many=True)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['put'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['PUT'], permission_classes=[IsAuthenticated])
     def update_rating(self, request, pk=None):
         event = self.get_object()
         if not user.can_comment:
@@ -130,46 +131,10 @@ class EventViewSet(ModelViewSet):
     
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['GET'])
     def search_events(self, request):
         filters = Q(is_private=False, cancelled=False)
-
-        category = request.query_params.get('category', None)
-        name = request.query_params.get('name', None)
-        description = request.query_params.get('description', None)
-        city = request.query_params.get('city', None)
-        price_min = request.query_params.get('price_min', None)
-        price_max = request.query_params.get('price_max', None)
-        tags = request.query_params.getlist('tags', None)
-
-        # Filtra per nome
-        if name:
-            filters &= Q(name__icontains=name)
-
-        # Filtra per descrizione
-        if description:
-            filters &= Q(description__icontains=description)
-    
-        # Filtra per città, se fornito
-        if city:
-            filters &= Q(city__icontains=city)
-
-        # Filtra per intervallo di prezzo
-        if price_min and price_max:
-            filters &= Q(price__gte=price_min, price__lte=price_max)
-        elif price_min:
-            filters &= Q(price__gte=price_min)
-        elif price_max:
-            filters &= Q(price__lte=price_max)
-
-
-        # Add the category filter
-        if category:
-            filters &= Q(category=category)
-
-        if tags:
-            filters &= Q(tags__name__in=tags)
-
+        filters &= Q(category="category")
 
         # Apply the filters to the queryset
         events = Event.objects.filter(filters).order_by('-starting_ts')

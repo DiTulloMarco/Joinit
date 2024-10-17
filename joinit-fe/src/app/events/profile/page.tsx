@@ -1,13 +1,13 @@
 'use server';
 import React from 'react';
-import { MyEvent } from '@types';
+import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
 import Image from 'next/image';
 
 export default async function ProfilePage() {
   const userEvents: MyEvent[] = [
-    { id: 1, title: "Evento Partecipato 1", desc: "Evento a cui hai partecipato", date: "2024-08-15", location: "Bologna" },
-    { id: 2, title: "Evento Partecipato 2", desc: "Altro evento a cui hai partecipato", date: "2024-09-05", location: "Firenze" },
+    { id: 1, name: "Evento Partecipato 1", description: "Evento a cui hai partecipato", starting_ts: "2024-08-15", place: "Bologna" },
+    { id: 2, name: "Evento Partecipato 2", description: "Altro evento a cui hai partecipato", starting_ts: "2024-09-05", place: "Firenze" },
   ];
 
   return (
@@ -29,7 +29,7 @@ export default async function ProfilePage() {
       <h2 className="text-2xl font-bold mb-4">I Tuoi Eventi</h2>
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {userEvents.map(event => (
-          <EventCard key={event.id} title={event.title} desc={event.desc} date={event.date} location={event.location} canJoin={false} />
+          <EventCard key={event.id} title={event.name} desc={event.description} date={event.starting_ts} location={event.place} canJoin={false} />
         ))}
       </section>
     </main>

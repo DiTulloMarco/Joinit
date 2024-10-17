@@ -1,7 +1,9 @@
-'use server';
+'use client';
 import React from 'react';
 
-export default async function CreateEventPage() {
+export default function CreateEventPage() {
+  
+  
   return (
     <main className="flex-1 p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <h1 className="text-3xl font-bold mb-8 dark:text-white">Crea un Nuovo Evento</h1>
