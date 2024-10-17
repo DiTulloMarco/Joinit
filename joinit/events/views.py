@@ -14,7 +14,7 @@ from .serializers import EventSerializer, RatingSerializer
 
 class EventViewSet(ModelViewSet):
     serializer_class = EventSerializer
-    queryset = Event.objects.all()
+    queryset = Event.objects.order_by('-event_date')
     permission_classes = [AllowAny]
     schema = AutoSchema(tags=['Events'])
 

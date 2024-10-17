@@ -39,12 +39,10 @@ class Event(models.Model):
     category    = ArrayField(models.CharField(max_length=20, choices=EventType), blank=True, null=True)
     tags        = ArrayField(models.CharField(max_length=30), blank=True, null=True) 
     place       = models.CharField(max_length=200, default="")
-    sharable_link = models.URLField(max_length=200, blank=True, null=True)
 
+    event_date            = models.DateTimeField()
     creation_ts     = models.DateTimeField(auto_now_add=True, null=False)
     last_modified_ts= models.DateTimeField(auto_now=True, null=False)
-    starting_ts     = models.DateTimeField()
-    ending_ts       = models.DateTimeField()
     participation_deadline = models.DateTimeField(default=None)
 
     created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='events', default=-1)
@@ -57,20 +55,35 @@ class Event(models.Model):
     joined_by = models.ManyToManyField(CustomUser)
 
     def save(self, *args, **kwargs):
-        today_datetime = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        if self.starting_ts < today_datetime:
-            raise ValueError('Starting time must be in the future or today')
-        if self.starting_ts > self.ending_ts:
-            raise ValueError('Starting time must be before ending time')
+        min_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        if self.participation_deadline < self.ending_ts:
-            raise ValueError('Participation deadline must be before ending time')
+        if self.participation_deadline < min_date:
+            raise ValueError('Deadline ' + str(self.participation_deadline) + ' must be in the future or today: ' + str(min_date))
+        if self.participation_deadline > self.event_date:
+            raise ValueError('Participation deadline must be before event date')
         
-        min_ending_ts = today_datetime + timedelta(days=3)
-
-        if self.ending_ts < min_ending_ts:
-            raise ValueError('Ending time must be at least 3 days from today')
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name + ' - ' + self.place + ' - ' + str(self.starting_ts)
+    
+    """ 
+     {
+  "name": "Primo evento",
+  "description": "Il mio primo evento",
+  "category": [
+    "Culturale"
+  ],
+  "tags": [
+    "acculturati"
+  ],
+  "place": "via Roma 61, Napoli",
+  "event_date": "2024-10-25T20:08:00.994Z",
+  "participation_deadline": "2024-10-21T20:08:00.994Z",
+  "max_participants": 20,
+  "created_by": 0,
+  "joined_by": [
+    0
+  ]
+}
+ """
