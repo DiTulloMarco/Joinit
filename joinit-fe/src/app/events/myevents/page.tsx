@@ -1,20 +1,38 @@
-'use server';
-import React from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
 import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
+import axios from 'axios';
+import { AppRoutes } from '@/enums/AppRoutes';
 
-export default async function MyEventsPage() {
-  const myEvents: MyEvent[] = [
-    { id: 1, name: "Evento 1", description: "Descrizione dell'evento 1", event_date: "2024-08-23", place: "Roma" },
-    { id: 2, name: "Evento 2", description: "Descrizione dell'evento 2", event_date: "2024-09-01", place: "Milano" },
-  ];
+const url = process.env.API_URL;
+export default function MyEventsPage() {
+  
+  const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
+  
+  async function fetchEvents() {
+    const id = sessionStorage.getItem('userId');
+    const response = await axios.get(`${url}/users/${id}/get_user_events/`);
+    setMyEvents(response.data.results);
+  }
 
+  useEffect(() => { 
+    fetchEvents();
+  }, []);
   return (
     <main className="flex-1 p-8">
       <h1 className="text-3xl font-bold mb-8">I Tuoi Eventi</h1>
       <section className="grid grid-cols-1 gap-6">
         {myEvents.map(event => (
-          <EventCard key={event.id} title={event.name} desc={event.description} date={event.event_date} location={event.place} canJoin={true} />
+          <EventCard
+          key={event.id}
+          title={event.name}
+          desc={event.description}
+          date={new Date(event.event_date).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(event.event_date).toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' })}
+          location={event.place}
+          canJoin={true} 
+          url={AppRoutes.EVENT + event.id}
+        />
         ))}
       </section>
     </main>

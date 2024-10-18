@@ -1,14 +1,25 @@
-'use server';
-import React from 'react';
+'use client';
+import React, { useEffect, useState } from 'react';
 import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
 import Image from 'next/image';
+import axios from 'axios';
+import { AppRoutes } from '@/enums/AppRoutes';
 
-export default async function ProfilePage() {
-  const userEvents: MyEvent[] = [
-    { id: 1, name: "Evento Partecipato 1", description: "Evento a cui hai partecipato", event_date: "2024-08-15", place: "Bologna" },
-    { id: 2, name: "Evento Partecipato 2", description: "Altro evento a cui hai partecipato", event_date: "2024-09-05", place: "Firenze" },
-  ];
+const url = process.env.API_URL;
+
+export default function ProfilePage() {
+  const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
+  
+  async function fetchEvents() {
+    const id = sessionStorage.getItem('userId');
+    const response = await axios.get(`${url}/users/${id}/get_user_events/`);
+    setMyEvents(response.data.results);
+  }
+
+  useEffect(() => { 
+    fetchEvents();
+  }, []);
 
   return (
     <main className="flex-1 p-8">
@@ -28,8 +39,15 @@ export default async function ProfilePage() {
       </div>
       <h2 className="text-2xl font-bold mb-4">I Tuoi Eventi</h2>
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {userEvents.map(event => (
-          <EventCard key={event.id} title={event.name} desc={event.description} date={event.event_date} location={event.place} canJoin={false} />
+        {myEvents.map(event => (
+          <EventCard
+          key={event.id}
+          title={event.name}
+          desc={event.description}
+          date={new Date(event.event_date).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(event.event_date).toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' })}
+          location={event.place}
+          canJoin={false}
+          url={AppRoutes.EVENT + event.id} />
         ))}
       </section>
     </main>

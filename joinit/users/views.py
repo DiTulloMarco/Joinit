@@ -78,7 +78,7 @@ class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
 
         page = self.paginate_queryset(user_events)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = EventSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
         
         serializer = EventSerializer(user_events, many=True)
