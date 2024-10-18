@@ -1,13 +1,13 @@
 'use server';
 import React from 'react';
-import { MyEvent } from '@types';
+import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
 
 export default async function SearchPage() {
   const searchResults: MyEvent[] = [
-    { id: 1, title: "Evento 1", desc: "Un evento interessante trovato tramite ricerca", date: "2024-08-23", location: "Roma" },
-    { id: 2, title: "Evento 2", desc: "Altro evento trovato tramite ricerca", date: "2024-09-01", location: "Milano" },
-    { id: 3, title: "Evento 3", desc: "Un altro evento rilevante", date: "2024-09-10", location: "Torino" },
+    { id: 1, name: "Evento 1", description: "Un evento interessante trovato tramite ricerca", event_date: "2024-08-23", place: "Roma" },
+    { id: 2, name: "Evento 2", description: "Altro evento trovato tramite ricerca", event_date: "2024-09-01", place: "Milano" },
+    { id: 3, name: "Evento 3", description: "Un altro evento rilevante", event_date: "2024-09-10", place: "Torino" },
   ];
 
   return (
@@ -24,9 +24,9 @@ export default async function SearchPage() {
           </span>
         </div>
       </div>
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {searchResults.map(event => (
-          <EventCard key={event.id} title={event.title} desc={event.desc} date={event.date} location={event.location} canJoin={true} />
+          <EventCard key={event.id} title={event.name} desc={event.description} date={event.event_date} location={event.place} canJoin={true} />
         ))}
       </section>
     </main>

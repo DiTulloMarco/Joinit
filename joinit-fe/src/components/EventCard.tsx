@@ -12,7 +12,7 @@ type EventCardProps = {
 export default function EventCard(props: EventCardProps) {
   return (
     <div className="border rounded-lg flex flex-col space-y-7 place-items-center sm:flex-row p-4 sm:space-y-0 sm:space-x-7 bg-white shadow-md dark:bg-gray-900 dark:border-gray-700">
-      <div className="h-32 w-32 bg-gray-200 rounded-md dark:bg-gray-700">
+      <div className="min-w-32 h-32 w-32 bg-gray-200 rounded-md dark:bg-gray-700">
 
       </div>
 

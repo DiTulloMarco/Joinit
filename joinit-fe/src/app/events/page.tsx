@@ -40,7 +40,7 @@ export default function EventsPage() {
         Altri Eventi
         <span className="material-icons text-lg ml-2">arrow_forward</span>
       </h2>
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {otherEvents && otherEvents.map(event => (
           <EventCard 
           title={event.name} 
