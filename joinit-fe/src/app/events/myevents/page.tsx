@@ -30,7 +30,7 @@ export default function MyEventsPage() {
           desc={event.description}
           date={new Date(event.event_date).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(event.event_date).toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' })}
           location={event.place}
-          canJoin={true} 
+          canJoin={false} 
           url={AppRoutes.EVENT + event.id}
         />
         ))}
