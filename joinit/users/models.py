@@ -10,7 +10,7 @@ class CustomUser(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
     first_name = models.CharField(_('First Name'), max_length=150, blank=True)
     last_name = models.CharField(_('Last Name'), max_length=150, blank=True)
-    birthDate = models.DateField(_('Birth Date'), null=True)
+    birth_date = models.DateField(_('Birth Date'), null=True)
     can_join = models.BooleanField(_('Can Join'), default=True)
     can_post = models.BooleanField(_('Can Post'), default=True)
     can_comment = models.BooleanField(_('Can Comment'), default=True)
