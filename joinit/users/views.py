@@ -71,7 +71,7 @@ class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
             return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         
         try:
-            user_events = user.events.all()
+            user_events = user.events.all().order_by('-event_date')
         except AttributeError:
             return Response({"message": "this user has no events"}, status=status.HTTP_404_NOT_FOUND)
         
