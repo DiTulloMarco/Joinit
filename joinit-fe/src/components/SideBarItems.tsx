@@ -6,31 +6,37 @@ import { usePathname } from 'next/navigation';
 import React from 'react';
 type Props = {
     textClass: string;
+    selectedClass: string;
     toggleMenu: () => void;
 };
 
 const SideBarItems = [
     {
+        id: 1,
         name: "Crea Evento",
         url: AppRoutes.CREATE_EVENT,
         icon: "add_circle"
     },
     {
+        id: 2,
         name: "Esplora",
         url: AppRoutes.EVENTS,
         icon: "explore"
     },
     {
+        id: 3,
         name: "Cerca",
         url: AppRoutes.SEARCH,
         icon: "search"
     },
     {
+        id: 4,
         name: "I Tuoi Eventi",
         url: AppRoutes.MY_EVENTS,
         icon: "event"
     },
     {
+        id: 5,
         name: "Il Tuo Profilo",
         url: AppRoutes.MY_PROFILE,
         icon: "person"
@@ -44,12 +50,12 @@ export default function SidebarItems(props: Props) {
         {
         SideBarItems.map((item) => (
             item.url !== pathname ? (
-                <Link href={item.url} className={`flex items-center space-x-2 ${props.textClass} p-2 rounded`}>
+                <Link href={item.url} key={item.id} className={`flex items-center space-x-2 ${props.textClass} p-2 px-4 rounded-lg`}>
                     <span className="material-icons">{item.icon}</span>
                     <span className="text-md">{item.name}</span>
                 </Link>
         ) : (
-            <Link href={item.url} onClick={props.toggleMenu} className={`flex items-center space-x-2 ${props.textClass} p-2 rounded`}>
+            <Link href={item.url} key={item.id} onClick={props.toggleMenu} className={`flex items-center space-x-2 ${props.selectedClass} p-2 px-4 rounded-lg`}>
                 <span className="material-icons">{item.icon}</span>
                 <span className="text-md">{item.name}</span>
             </Link>

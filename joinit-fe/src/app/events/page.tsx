@@ -4,7 +4,6 @@ import axios from 'axios';
 import EventCard from '@components/EventCard';
 import { MyEvent } from '@/types/MyEvent';
 import { AppRoutes } from '@/enums/AppRoutes';
-import { stringify } from 'querystring';
 
 const url = process.env.API_URL
 
@@ -43,6 +42,7 @@ export default function EventsPage() {
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {otherEvents && otherEvents.map(event => (
           <EventCard 
+          key={event.id}
           title={event.name} 
           desc={event.description} 
           date={new Date(event.event_date).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(event.event_date).toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' })} 
