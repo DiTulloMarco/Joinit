@@ -5,4 +5,6 @@ export type User = {
     email: string;
     birth_date: string;
     profile_picture: string;
+    city?: string;
+    nation?: string;
   }

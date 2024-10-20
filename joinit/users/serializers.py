@@ -15,10 +15,14 @@ class UserSerializer(ModelSerializer):
         return user
     
 class UserEditSerializer(ModelSerializer):
-    events = StringRelatedField(many=True)
     class Meta:
         model = CustomUser
-        fields = ['id', 'first_name', 'last_name', 'birthDate', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation', 'events']
+        fields = ['birth_date', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation']
+        extra_kwargs = {
+            'can_join': {'write_only': True},
+            'can_post': {'write_only': True},
+            'can_comment': {'write_only': True}
+        }
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

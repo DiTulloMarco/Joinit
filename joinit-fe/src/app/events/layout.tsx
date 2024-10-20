@@ -33,7 +33,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             <button onClick={toggleMenu} className="flex items-center space-x-2 dark:hover:bg-gray-800 p-2 rounded md:hidden">
               {menuOpen &&<span className="material-icons">close</span>}
             </button>
-              <div className="h-1/2 w-full flex items-center justify-center ">
+              <div className="h-1/2 w-full flex items-center justify-center">
                   <SidebarItems toggleMenu={toggleMenu} textClass='hover:text-purple-600' />
               </div>
           </div>

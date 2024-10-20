@@ -1,10 +1,10 @@
 from rest_framework import status
-from rest_framework.generics import CreateAPIView, RetrieveAPIView
+from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
@@ -39,10 +39,15 @@ class CustomTokenRefreshView(TokenRefreshView):
     schema = AutoSchema(tags=['Users'])
     serializer_class = CustomTokenRefreshSerializer
 
-class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
+class UserViewSet(ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     schema = AutoSchema(tags=['Users'])
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return UserEditSerializer
+        return UserSerializer
 
     @action(detail=False, methods=['get'])
     def search(self, request, *args, **kwargs):
@@ -50,18 +55,6 @@ class UserViewSet(ReadOnlyModelViewSet, RetrieveAPIView):
             CustomUser.objects.filter(
                 Q(last_name__icontains=request.query_params.get('q')) | Q(first_name=request.query_params.get('q')))
         )
-
-    def update(self, request, pk):
-            try:
-                user = CustomUser.objects.get(id=pk)
-            except CustomUser.DoesNotExist:
-                return Response({"message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-            user_serialized = UserEditSerializer(instance=user, data=request.data)
-            if user_serialized.is_valid():
-                user_serialized.save()
-                return Response({"user": CustomUser.objects.get(id=pk)}, status=status.HTTP_200_OK)
-            return Response(user_serialized.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'])
     def get_user_events(self, request, pk):
