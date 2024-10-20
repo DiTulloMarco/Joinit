@@ -34,7 +34,7 @@ class EventViewSet(ModelViewSet):
     @action(detail=False, methods=['GET'])
     def list_public(self, request):
         try:
-            events = Event.objects.filter(is_private=False, cancelled=False)
+            events = Event.objects.filter(is_private=False, cancelled=False).order_by('-event_date')
         except:
             raise Exception()
         

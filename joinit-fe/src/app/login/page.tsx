@@ -23,6 +23,12 @@ export default function Login() {
 
     const handleClickShowPassword = () => setShowPassword((show) => !show);
 
+    useEffect(() => {
+        if(sessionStorage.getItem('authToken')) {
+            router.push(AppRoutes.EVENTS);
+        }
+    }, []);
+
     const onSubmit: SubmitHandler<LoginFormType> = async (data) => {
       try {
           setLoading(true);

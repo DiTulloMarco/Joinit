@@ -3,5 +3,8 @@ export type User = {
     first_name: string;
     last_name: string;
     email: string;
-    birthDate: Date;
+    birth_date: string;
+    profile_picture: string;
+    city?: string;
+    nation?: string;
   }
