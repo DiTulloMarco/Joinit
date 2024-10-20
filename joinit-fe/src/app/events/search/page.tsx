@@ -1,14 +1,49 @@
-'use server';
-import React from 'react';
+'use client';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
+import { AppRoutes } from '@/enums/AppRoutes';
 
-export default async function SearchPage() {
-  const searchResults: MyEvent[] = [
-    { id: 1, name: "Evento 1", description: "Un evento interessante trovato tramite ricerca", event_date: "2024-08-23", place: "Roma" },
-    { id: 2, name: "Evento 2", description: "Altro evento trovato tramite ricerca", event_date: "2024-09-01", place: "Milano" },
-    { id: 3, name: "Evento 3", description: "Un altro evento rilevante", event_date: "2024-09-10", place: "Torino" },
-  ];
+const url = process.env.API_URL
+
+export default function SearchPage() {
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<MyEvent[]>([]);
+  const [error, setError] = useState<string>("Nessun evento per ora ;(");
+  
+  async function fetchDefaultEvents() {
+    try {
+      const response = await axios.get(`${url}/events/list_public/`);
+      setSearchResults(response.data.results);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  useEffect(() => { 
+    fetchDefaultEvents();
+  }, []);
+  
+  async function fetchSearchResults() {
+    try {
+      const response = await axios.get(`${url}/events/search/?q=${searchQuery}`);
+      console.log(response.data.results);
+      setSearchResults(response.data.results);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  useEffect(() => { 
+    if (searchQuery) {
+      fetchSearchResults();
+      setError("Nessun trovato ;(");
+    }else{
+      fetchDefaultEvents();
+      setError("Nessun evento per ora ;(");
+    }
+  }, [searchQuery]);
 
   return (
     <main className="flex-1 p-8">
@@ -16,6 +51,7 @@ export default async function SearchPage() {
         <div className="relative">
           <input
             type="text"
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Titolo dell'evento"
             className="w-full p-4 border border-gray-300 rounded-full"
           />
@@ -24,10 +60,18 @@ export default async function SearchPage() {
           </span>
         </div>
       </div>
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {searchResults.map(event => (
-          <EventCard key={event.id} title={event.name} desc={event.description} date={event.event_date} location={event.place} canJoin={true} />
+          <EventCard 
+          key={event.id} 
+          title={event.name} 
+          desc={event.description} 
+          date={new Date(event.event_date).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(event.event_date).toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' })} 
+          location={event.place} 
+          canJoin={true} 
+          url={AppRoutes.EVENT + event.id} />
         ))}
+        {searchResults.length === 0 && <p>{error}</p>}
       </section>
     </main>
   );

@@ -48,6 +48,9 @@ class UserViewSet(ModelViewSet):
         if self.request.method in ['PUT', 'PATCH']:
             return UserEditSerializer
         return UserSerializer
+    
+    def create(self, request, *args, **kwargs):
+        pass
 
     @action(detail=False, methods=['get'])
     def search(self, request, *args, **kwargs):

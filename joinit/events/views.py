@@ -131,13 +131,20 @@ class EventViewSet(ModelViewSet):
     
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    @action(detail=False, methods=['GET'])
+    @action(detail=False, methods=['GET'], url_path='search')
     def search_events(self, request):
+        q = request.query_params.get('q', '')
         filters = Q(is_private=False, cancelled=False)
-        filters &= Q(category="category")
-
+        if q:
+            filters = (
+                       Q(name__icontains=q) | 
+                       Q(description__icontains=q) | 
+                       Q(place__icontains=q) |
+                       Q(tags__overlap=[q]) |
+                       Q(category__overlap=[q])
+                    )
         # Apply the filters to the queryset
-        events = Event.objects.filter(filters).order_by('-starting_ts')
+        events = Event.objects.filter(filters).order_by('-event_date')
 
         # Paginate the result if necessary
         page = self.paginate_queryset(events)

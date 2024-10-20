@@ -25,7 +25,7 @@ export default function EventCard(props: EventCardProps) {
           {props.date} - {props.location}
         </p>
         { props.canJoin && 
-        <a href={props.url} className="primary-button mt-2 !w-1/3">
+        <a href={props.url} className="primary-button mt-2 min-w-28 !w-1/3">
           Partecipa
             
         </a>
