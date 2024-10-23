@@ -15,21 +15,21 @@ const url = process.env.API_URL;
 export default function Login() {
   
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormType>()
-    const [loading, setLoading] = useState<boolean>(false);
-    const router = useRouter();
-    const { login } = useContext(AuthContext);
+  const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
+  const { login } = useContext(AuthContext);
 
-    const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-    const handleClickShowPassword = () => setShowPassword((show) => !show);
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
 
-    useEffect(() => {
-        if(sessionStorage.getItem('authToken')) {
-            router.push(AppRoutes.EVENTS);
-        }
-    }, []);
-
-    const onSubmit: SubmitHandler<LoginFormType> = async (data) => {
+  useEffect(() => {
+      if(sessionStorage.getItem('authToken')) {
+          router.push(AppRoutes.EVENTS);
+      }
+  }, []);
+  
+  const onSubmit: SubmitHandler<LoginFormType> = async (data) => {
       try {
           setLoading(true);
           const response = await axios.post(`${url}/users/login`, {
@@ -145,6 +145,7 @@ export default function Login() {
         <div className="text-center mt-6">
           <p className="form-label">Non hai un account?</p>
         </div>
+        
         <a href="/register"
            className="primary-button mt-2"
           >

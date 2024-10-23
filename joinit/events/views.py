@@ -6,6 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.schemas.openapi import AutoSchema
 
 from django.db.models import Q
+from django.utils import timezone
+from users.models import CustomUser
 from .models import Event, Rating, EventType
 from .serializers import EventSerializer, RatingSerializer
 
@@ -47,17 +49,50 @@ class EventViewSet(ModelViewSet):
         return Response(serializer.data)
 
 
-    # Action to allow users to participate in an event
-    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
-    def participate(self, request, pk=None):
+    # Action to allow users to join an event
+    @action(detail=True, methods=['PUT'])
+    def join(self, request, pk=None):
         event = self.get_object()
-        if not user.can_join:
-            return Response({'detail': 'You are not allowed to join events.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            user = CustomUser.objects.get(id=request.data['userId'])
+            if not user.can_join or event.is_private:
+                return Response({'detail': 'You are not allowed to join events.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            if event.participation_deadline < timezone.now():
+                return Response({'detail': 'Event participation deadline has passed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if event.joined_by.filter(id=user.id).exists():
+                return Response({'detail': 'You have already joined this event.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            event.joined_by.add(user)
+            event.save()
+        except (CustomUser.DoesNotExist, Exception) as e:
+            if isinstance(e, CustomUser.DoesNotExist):
+                return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)    
+            else:
+                return Response({'detail': 'Something went wrong: ' + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': 'You have successfully joined the event.'}, status=status.HTTP_201_CREATED)
     
-        participation, created = Participation.objects.get_or_create(user=request.user, event=event)
-        if created:
-            return Response({'status': 'You have successfully joined the event.'}, status=status.HTTP_201_CREATED)
-        return Response({'status': 'You are already participating in this event.'}, status=status.HTTP_200_OK)
+    @action(detail=True, methods=['PUT'])
+    def cancel_join(self, request, pk=None):
+        event = self.get_object()
+        try:
+            user = CustomUser.objects.get(id=request.data['userId'])
+            
+            if not event.joined_by.filter(id=user.id).exists():
+                return Response({'detail': 'You have not joined this event.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if event.created_by.id == user.id:
+                return Response({'detail': 'You cannot cancel your own event.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            event.joined_by.remove(user)
+            event.save()
+        except (CustomUser.DoesNotExist, Exception) as e:
+            if isinstance(e, CustomUser.DoesNotExist):
+                return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)    
+            else:
+                return Response({'detail': 'Something went wrong: ' + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': 'You have successfully cancelled your participation in the event.'}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['GET'], permission_classes=[AllowAny])
     def participants(self, request, pk=None):
@@ -67,34 +102,29 @@ class EventViewSet(ModelViewSet):
         return Response(serializer.data)
     
 
-    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
-    def rate_event(self, request, pk=None):
+    @action(detail=True, methods=['POST'])
+    def rate(self, request, pk=None):
         event = self.get_object()
-        if not user.can_comment:
-            return Response({'detail': 'You are not allowed to comment or rate events.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            user = CustomUser.objects.get(id=request.data['userId'])
+            if not user.can_comment:
+                return Response({'detail': 'You are not allowed to comment or rate events.'}, status=status.HTTP_403_FORBIDDEN)
 
+            if not event.joined_by.filter(id=user.id).exists():
+                return Response({'detail': 'You cannot rate an event you did not participate in.'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Ensure the user has participated in the event
-        participation = Participation.objects.filter(user=request.user, event=event).exists()
-        if not participation:
-            return Response({'detail': 'You cannot rate an event you did not participate in.'}, status=status.HTTP_403_FORBIDDEN)
-
-        # Check if the user has already rated the event
-        existing_rating = Rating.objects.filter(user=request.user, event=event).first()
-        if existing_rating:
-            return Response({'detail': 'You have already rated this event.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        rating_data = {
-        'rating': request.data.get('rating'),
-        'review': request.data.get('review', '')  # Review is optional
-        }
-
-        # Create a new rating
-        serializer = RatingSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user, event=event)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Check if the user has already rated the event
+            existing_rating = Rating.objects.filter(user=user, event=event).first()
+            if existing_rating:
+                return Response({'detail': 'You have already rated this event.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            rate_srlz = RatingSerializer(data={'user': request.data['userId'], 'event': event.id, 'rating': request.data['rating'], 'review': request.data['review']})
+            if rate_srlz.is_valid():
+                rate_srlz.save()
+                return Response(rate_srlz.data, status=status.HTTP_201_CREATED)
+            return Response(rate_srlz.errors, status=status.HTTP_400_BAD_REQUEST)
+        except (CustomUser.DoesNotExist):
+            return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
     # Add a method to list event ratings
     @action(detail=True, methods=['GET'], permission_classes=[AllowAny])
@@ -164,9 +194,6 @@ class EventViewSet(ModelViewSet):
             return Response({'status': 'Your participation has been cancelled.'}, status=status.HTTP_204_NO_CONTENT)
         except Participation.DoesNotExist:
             return Response({'error': 'You are not participating in this event.'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    
-        
 
     """
     def list(self, request):

@@ -19,15 +19,15 @@ export default function CreateEventPage() {
       try {
           // TODO: da implementare logica per loading
           setLoading(true);
-          data.created_by = Number(localStorage.getItem('userId'));
-          data.joined_by = [Number(localStorage.getItem('userId'))];
+          data.created_by = Number(sessionStorage.getItem('userId'));
+          data.joined_by = [Number(sessionStorage.getItem('userId'))];
           const response = await axios.post(`${url}/events/`, data);
           router.push(AppRoutes.MY_EVENTS);
           setLoading(false);
-          console.log( 'login success');
+          console.log( 'event created');
       } catch (error) {
           console.error(error);
-          console.error( 'login failed');
+          console.error( 'event creation failed');
           setLoading(false);
       };
     }

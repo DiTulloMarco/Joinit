@@ -93,12 +93,9 @@ export default function ProfilePage() {
           {myEvents.map(event => (
             <EventCard
             key={event.id}
-            title={event.name}
-            desc={event.description}
-            date={new Date(event.event_date).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(event.event_date).toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' })}
-            location={event.place}
-            canJoin={false}
-            url={AppRoutes.EVENT + event.id} />
+            event={event}
+            canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+          />
           ))}
         </section>
 

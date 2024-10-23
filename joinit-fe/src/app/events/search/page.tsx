@@ -63,13 +63,10 @@ export default function SearchPage() {
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {searchResults.map(event => (
           <EventCard 
-          key={event.id} 
-          title={event.name} 
-          desc={event.description} 
-          date={new Date(event.event_date).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(event.event_date).toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' })} 
-          location={event.place} 
-          canJoin={true} 
-          url={AppRoutes.EVENT + event.id} />
+          key={event.id}
+          event={event} 
+          canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))} 
+        />
         ))}
         {searchResults.length === 0 && <p>{error}</p>}
       </section>
