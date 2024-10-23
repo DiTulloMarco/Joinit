@@ -2,6 +2,7 @@ import React, { use, useEffect, useState } from 'react';
 import { AppRoutes } from '@/enums/AppRoutes';
 import axios from 'axios';
 import { MyEvent } from '@/types/MyEvent';
+import { useToast } from '@/hooks/use-toast';
 
 const url = process.env.API_URL
 
@@ -12,6 +13,7 @@ type EventCardProps = {
 
 export default function EventCard(props: EventCardProps) {
 
+  const { toast }: any = useToast();
   const [canJoin, setCanJoin] = useState<boolean>(false);
   const [joined, setJoined] = useState<boolean>(false);
 
@@ -29,6 +31,13 @@ export default function EventCard(props: EventCardProps) {
       });
       setCanJoin(false);
       setJoined(true);
+      toast({
+        title: 'Partecipato',
+        description: 'Sei stato aggiunto ai partecipanti!',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      })
     }catch{
       console.error('Failed to join event');
     }
@@ -42,9 +51,27 @@ export default function EventCard(props: EventCardProps) {
       });
       setCanJoin(props.canJoin && Date.parse(props.event.event_date) > Date.now());
       setJoined(false);
+      toast({
+        title: 'Cancellato',
+        description: 'Sei stato rimosso dai partecipanti!',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      })
     }catch{
       console.error('Failed to join event');
     }
+  }
+
+  const handleShareEvent = () => {
+    navigator.clipboard.writeText(window.location.origin + AppRoutes.EVENT + props.event.id)
+    toast({
+      title: 'Copiato!',
+      description: 'Link copiato negli appunti',
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    })
   }
 
   return (
@@ -54,7 +81,10 @@ export default function EventCard(props: EventCardProps) {
       </div>
 
       <div className=''>
-        <h3 className="text-xl font-bold dark:text-white">{props.event.name}</h3>
+        <div className='flex items-center justify-between'>
+          <h3 className="text-xl font-bold dark:text-white">{props.event.name}</h3>
+          <button onClick={handleShareEvent} className='material-icons text-sm'>share</button>
+        </div>
         <p className="text-gray-600 dark:text-gray-300 mt-2">
           {props.event.description}
         </p>

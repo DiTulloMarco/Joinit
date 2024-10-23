@@ -2,21 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  color: var(--foreground);
-  background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -41,4 +27,10 @@ body {
 
 .form-label{
   @apply block text-sm font-medium text-gray-700 dark:text-gray-300
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
 }
