@@ -39,16 +39,39 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'django_extensions',
-  
+    
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'corsheaders',
-  
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+
     # Our apps
     'users',
     'events'
 ]
+
+SITE_ID=1
+AUTHENTICATION_BACKEND = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': environ.get("GOOGLE_CLIENT_ID"),
+            'secret': environ.get("GOOGLE_SECRET"),
+            'key': ''
+        }
+    }
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -56,11 +79,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    #'DEFAULT_PERMISSION_CLASSES': (
+    'DEFAULT_PERMISSION_CLASSES': (
     #    'rest_framework.permissions.IsAuthenticated',
     #    #'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
-    #),
+    ),
 }
+
+REST_USE_JWT = True
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
@@ -92,11 +117,16 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
     'corsheaders.middleware.CorsMiddleware',
+
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 
 CORS_ORIGIN_ALLOW_ALL = True
-#CORS_ALLOWED_ORIGINS  = ('localhost:3000',)
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+]
 
 ROOT_URLCONF = 'joinit.urls'
 
@@ -175,3 +205,8 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL  = 'users.CustomUser'
+
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None 
+ACCOUNT_USERNAME_REQUIRED = False  # Don't require a username
+ACCOUNT_EMAIL_REQUIRED = True  # Email required
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
