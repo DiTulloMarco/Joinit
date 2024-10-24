@@ -11,6 +11,8 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { AppRoutes } from '@/enums/AppRoutes';
 
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { getCSRFToken } from '@/auth/getCookies';
+import { cookies } from 'next/headers';
 
 const url = process.env.API_URL;
 
@@ -22,11 +24,6 @@ export default function Login() {
   const { login } = useContext(AuthContext);
   
   const [showPassword, setShowPassword] = useState(false);
-
-  //const client_id = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  //useEffect(() => {
-  //  console.log("Client_id: " + client_id);
-  //})
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
@@ -52,23 +49,23 @@ export default function Login() {
         setLoading(false);
     };
   };
+  
 
   const handleGoogleLoginSuccess = async (credentialResponse: CredentialResponse) => {
     const { credential }  = credentialResponse;
 
+    const csrfToken = getCSRFToken();
+
     // Send the token to the backend
-    const response = await fetch('http://localhost:8001/account/google/login/', {
-      method: 'POST',
+    const response = await fetch('http://localhost:8001/accounts/browser/v1/auth/login', {
+      method: "POST",
       headers: {
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id_token: credential,
-      }),
-    });
+        'X-CsrfToken': csrfToken,
+      } 
+    })
 
-    const data = await response.json();
-    console.log(data);
+    console.log(response);
   };
 
   const handleGoogleLoginError = () => {
@@ -166,8 +163,16 @@ export default function Login() {
           </button>
         </form>
 
-        <GoogleOAuthProvider clientId='467250512053-24qijerapbsr6sn0ti9dj3ha1peae1d5.apps.googleusercontent.com'>
-            <GoogleLogin onSuccess={handleGoogleLoginSuccess} onError={handleGoogleLoginError}></GoogleLogin>
+        <GoogleOAuthProvider 
+          clientId=
+          //{process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
+          '467250512053-24qijerapbsr6sn0ti9dj3ha1peae1d5.apps.googleusercontent.com'
+        >
+            <GoogleLogin 
+              onSuccess={handleGoogleLoginSuccess}
+              onError={handleGoogleLoginError}
+            >
+            </GoogleLogin>
         </GoogleOAuthProvider>
 
         <div className="text-center mt-6">

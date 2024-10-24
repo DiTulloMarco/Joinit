@@ -34,8 +34,5 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name="docs.html", extra_context={"schema_url": 'openapi-schema'}), name="swagger-ui"),
     path(base_url + 'users/', include('users.urls')),
     path(base_url, include('events.urls')),
-    #path('dj-rest-auth/google/', include('allauth.socialaccount.urls')),
-    path('account/', include('allauth.urls')),
-    
-
+    path('accounts/', include('allauth.headless.urls')),
 ] + router.urls
