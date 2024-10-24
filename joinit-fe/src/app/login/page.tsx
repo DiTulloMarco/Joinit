@@ -9,6 +9,7 @@ import { AuthContext } from '@/hooks/authContext';
 import { LoginFormType } from '@/types/LoginFormType';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { AppRoutes } from '@/enums/AppRoutes';
+import { useToast } from '@/hooks/use-toast';
 
 const url = process.env.API_URL;
 
@@ -17,7 +18,8 @@ export default function Login() {
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormType>()
   const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
-  const { login } = useContext(AuthContext);
+  const { login }: any = useContext(AuthContext);
+  const { toast } = useToast();
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -37,7 +39,6 @@ export default function Login() {
               password: data.password,
           });
           const { user, access, refresh } = response.data;
-          console.log({ user, access, refresh });
           login(access, user.id);
           if (data.rememberMe) {
               localStorage.setItem('refreshToken', refresh);
@@ -46,8 +47,11 @@ export default function Login() {
           setLoading(false);
           console.log( 'login success');
       } catch (error) {
-          console.error(error);
-          console.error( 'login failed');
+          toast({
+              title: 'Login fallito',
+              description: 'Email o password errate',
+              duration: 2000,
+          });
           setLoading(false);
       };
   };

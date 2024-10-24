@@ -19,7 +19,6 @@ export default function EventCard(props: EventCardProps) {
 
   useEffect(() => {
     setCanJoin(props.canJoin && Date.parse(props.event.event_date) > Date.now());
-    console.log(props.event);
     setJoined(props.event.joined_by?.includes(parseInt(sessionStorage.getItem('userId')!)));
   }, [props.event]);
   
@@ -34,12 +33,14 @@ export default function EventCard(props: EventCardProps) {
       toast({
         title: 'Partecipato',
         description: 'Sei stato aggiunto ai partecipanti!',
-        status: 'success',
         duration: 5000,
-        isClosable: true,
       })
     }catch{
-      console.error('Failed to join event');
+      toast({
+        title: 'Errore',
+        description: 'Non è stato possibile aggiungerti ai partecipanti!',
+        duration: 5000,
+      })
     }
   }
 
@@ -54,12 +55,14 @@ export default function EventCard(props: EventCardProps) {
       toast({
         title: 'Cancellato',
         description: 'Sei stato rimosso dai partecipanti!',
-        status: 'success',
         duration: 5000,
-        isClosable: true,
       })
     }catch{
-      console.error('Failed to join event');
+      toast({
+        title: 'Errore',
+        description: 'Non è stato possibile rimuoverti dai partecipanti!',
+        duration: 5000,
+      })
     }
   }
 
