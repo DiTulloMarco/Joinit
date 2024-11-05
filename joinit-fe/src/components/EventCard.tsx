@@ -77,6 +77,46 @@ export default function EventCard(props: EventCardProps) {
     })
   }
 
+  const handleGetCalendarFile = () => {
+
+    const hiddenLink = document.createElement("a");
+    
+    const content = 
+    "BEGIN:VCALENDAR\r\n" +
+    //"PRODID:-//Google Inc//Google Calendar 70.9054//EN\r\n" +
+    "VERSION:2.0\r\n" +
+    
+    "BEGIN:VEVENT\r\n" +
+    "DTSTART:" + props.event.event_date.toString() + "\r\n" +
+    "DTEND:" + props.event.event_date.toString() + "\r\n" +
+    "UID:" + window.crypto.randomUUID().toString() + "@joinit.com\r\n" +
+    "DESCRIPTION:" + props.event.description.toString() + "\r\n" +
+    "LOCATION:" + props.event.place.toString() + "\r\n" +
+    "STATUS:TENTATIVE\r\n" +
+    "SUMMARY:" + props.event.name.toString() + "\r\n" +
+    "END:VEVENT\r\n" +
+
+    "END:VCALENDAR\r\n"
+
+    const fileICS = new Blob([content], { type: 'text/plain' });
+    hiddenLink.href = URL.createObjectURL(fileICS);
+
+    var shortEventName = props.event.name.toString().length > 35 ? props.event.name.toString().substring(0, 35) : props.event.name.toString();
+    shortEventName = shortEventName.replace(/ /g,"_");
+    hiddenLink.download = "evento_" + shortEventName + ".ics";
+    
+    hiddenLink.click();
+    URL.revokeObjectURL(hiddenLink.href);
+
+    toast({
+      title: 'Creato!',
+      description: 'File iCalendar creato',
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    })
+  }
+
   return (
     <div className="border rounded-lg flex flex-col space-y-7 place-items-center sm:flex-row p-4 sm:space-y-0 sm:space-x-7 bg-white shadow-md dark:bg-gray-900 dark:border-gray-700">
       <div className="min-w-32 h-32 w-32 bg-gray-200 rounded-md dark:bg-gray-700">
@@ -105,6 +145,12 @@ export default function EventCard(props: EventCardProps) {
         { joined &&
           <button onClick={handleCancelJoin} className="primary-button mt-2 min-w-28 opacity-60 !w-1/3">
             Annulla partecipazione
+          </button>
+        }
+
+        { window.location.pathname.includes(AppRoutes.EVENT + props.event.id) &&
+          <button onClick={handleGetCalendarFile} className="secondary-button mt-2 min-w-28 opacity-60 !w-1/3 hover:underline">
+            Aggiungilo al tuo calendario!
           </button>
         }
 
