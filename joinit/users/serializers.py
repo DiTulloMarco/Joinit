@@ -13,7 +13,7 @@ class UserSerializer(ModelSerializer):
     def create(self, validated_data):
         user = CustomUser.objects.create_user(**validated_data)
         return user
-    
+
 class UserEditSerializer(ModelSerializer):
     class Meta:
         model = CustomUser
@@ -23,6 +23,11 @@ class UserEditSerializer(ModelSerializer):
             'can_post': {'write_only': True},
             'can_comment': {'write_only': True}
         }
+
+class GoogleUserSerializer(ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'first_name', 'last_name']
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -1,14 +1,12 @@
 from django.urls import path
 from rest_framework import routers
 
-from .views import CreateUserView, UserViewSet, CustomTokenObtainPairView, CustomTokenRefreshView
+from . import views
 
 router = routers.SimpleRouter()
-router.register(r'', UserViewSet)
-router.register
+router.register(r'', views.UserViewSet)
 
 urlpatterns = [
-    path("register", CreateUserView.as_view(), name="register"),
-    path("login", CustomTokenObtainPairView.as_view(), name="get_token"),
-    path("token_refresh/", CustomTokenRefreshView.as_view(), name="refresh_token"),
+    path("login", views.CustomTokenObtainPairView.as_view(), name="get_token"),
+    path("token_refresh/", views.CustomTokenRefreshView.as_view(), name="refresh_token"),
 ] + router.urls

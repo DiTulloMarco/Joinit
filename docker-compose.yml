@@ -27,6 +27,8 @@ services:
       - POSTGRES_PASSWORD:${POSTGRES_PASSWORD}
       - POSTGRES_USER:${POSTGRES_USER}
       - POSTGRES_DB:${POSTGRES_DB}
+      - GOOGLE_CLIENT_ID:${GOOGLE_CLIENT_ID}
+      - GOOGLE_SECRET:${GOOGLE_SECRET}
       - POSTGRES_HOST:db
     volumes:
       - ./joinit:/joinit
@@ -37,16 +39,16 @@ services:
     networks:
       - default
 
-  Nominatim:
-    container_name: joinit-geo
-    image: mediagis/nominatim:4.4
-    restart: always
-    ports:
-      - "8001:8000"
-    depends_on:
-      - db
-    networks:
-      - default
+  #Nominatim:
+  #  container_name: joinit-geo
+  #  image: mediagis/nominatim:4.4
+  #  restart: always
+  #  ports:
+  #    - "8001:8000"
+  #  depends_on:
+  #    - db
+  #  networks:
+  #    - default
 
   #frontend:
   #  container_name: joinit-fe

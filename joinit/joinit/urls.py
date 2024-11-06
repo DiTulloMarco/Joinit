@@ -33,6 +33,5 @@ urlpatterns = [
     path('schema/', get_schema_view(title="Joinit API"), name="openapi-schema"),
     path('', TemplateView.as_view(template_name="docs.html", extra_context={"schema_url": 'openapi-schema'}), name="swagger-ui"),
     path(base_url + 'users/', include('users.urls')),
-    path(base_url, include('events.urls')), 
-    
+    path(base_url, include('events.urls')),
 ] + router.urls

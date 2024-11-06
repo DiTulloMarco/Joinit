@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useContext, useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
@@ -11,7 +11,13 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { AppRoutes } from '@/enums/AppRoutes';
 import { useToast } from '@/hooks/use-toast';
 
+import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import { jwtDecode, JwtPayload } from 'jwt-decode'
+import { User } from '@/types/User';
+import { GoogleRegisterType } from '@/types/GoogleRegisterType';
+
 const url = process.env.API_URL;
+const clientId = process.env.GOOGLE_CLIENT_ID;
 
 export default function Login() {
   
@@ -23,15 +29,9 @@ export default function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
+    const handleClickShowPassword = () => setShowPassword((show) => !show);
 
-  useEffect(() => {
-      if(sessionStorage.getItem('authToken')) {
-          router.push(AppRoutes.EVENTS);
-      }
-  }, []);
-  
-  const onSubmit: SubmitHandler<LoginFormType> = async (data) => {
+    const onSubmit: SubmitHandler<LoginFormType> = async (data) => {
       try {
           setLoading(true);
           const response = await axios.post(`${url}/users/login`, {
@@ -39,6 +39,7 @@ export default function Login() {
               password: data.password,
           });
           const { user, access, refresh } = response.data;
+          console.log({ user, access, refresh });
           login(access, user.id);
           if (data.rememberMe) {
               localStorage.setItem('refreshToken', refresh);
@@ -47,13 +48,36 @@ export default function Login() {
           setLoading(false);
           console.log( 'login success');
       } catch (error) {
-          toast({
-              title: 'Login fallito',
-              description: 'Email o password errate',
-              duration: 2000,
-          });
+          console.error(error);
+          console.error( 'login failed');
           setLoading(false);
       };
+  };
+  
+
+  const handleGoogleLoginSuccess = async (credentialResponse: CredentialResponse) => {
+    const { credential } = credentialResponse;
+    try{
+      const jwt_decode: JwtPayload = jwtDecode(credential!); 
+      const userData: GoogleRegisterType = {
+        email: (jwt_decode as { email: string }).email,
+        first_name: (jwt_decode as { given_name: string }).given_name,
+        last_name: (jwt_decode as { family_name: string }).family_name,
+        profile_picture: (jwt_decode as { picture: string }).picture
+      };
+      const response = await axios.post(`${url}/users/signupWithGoogle/`, userData);
+      console.log(response.data);
+    }catch(error){
+      console.error(error);
+    }
+    console.log(credentialResponse);
+    login(credential!, '-1');
+    router.push(AppRoutes.EVENTS);
+
+  };
+
+  const handleGoogleLoginError = () => {
+    console.log('Login Failed');
   };
 
   return (
@@ -146,6 +170,15 @@ export default function Login() {
             Accedi
           </button>
         </form>
+
+        <GoogleOAuthProvider clientId='467250512053-24qijerapbsr6sn0ti9dj3ha1peae1d5.apps.googleusercontent.com'>
+            <GoogleLogin 
+              onSuccess={handleGoogleLoginSuccess}
+              onError={handleGoogleLoginError}
+            >
+            </GoogleLogin>
+        </GoogleOAuthProvider>
+
         <div className="text-center mt-6">
           <p className="form-label">Non hai un account?</p>
         </div>
