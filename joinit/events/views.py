@@ -12,8 +12,6 @@ from .models import Event, Rating, EventType
 from .serializers import EventSerializer, RatingSerializer
 
 
-
-
 class EventViewSet(ModelViewSet):
     serializer_class = EventSerializer
     queryset = Event.objects.order_by('-event_date')
@@ -63,6 +61,10 @@ class EventViewSet(ModelViewSet):
 
             if event.joined_by.filter(id=user.id).exists():
                 return Response({'detail': 'You have already joined this event.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if event.joined_by.count() >= event.max_participants:
+                return Response({'detail': 'Maximum number of participants reached.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
 
             event.joined_by.add(user)
             event.save()

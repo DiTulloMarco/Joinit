@@ -40,7 +40,7 @@ class Event(models.Model):
     tags        = ArrayField(models.CharField(max_length=30), blank=True, null=True) 
     place       = models.CharField(max_length=200, default="")
 
-    event_date            = models.DateTimeField()
+    event_date      = models.DateTimeField()
     creation_ts     = models.DateTimeField(auto_now_add=True, null=False)
     last_modified_ts= models.DateTimeField(auto_now=True, null=False)
     participation_deadline = models.DateTimeField(default=None)
@@ -67,7 +67,7 @@ class Event(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name + ' - ' + self.place + ' - ' + str(self.starting_ts)
+        return self.name + ' - ' + self.place + ' - ' + str(self.event_date)
     
     """ 
      {
