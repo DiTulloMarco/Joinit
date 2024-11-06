@@ -32,6 +32,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet, mixins.UpdateModelMixin, mixins
     serializer_class = serializers.UserSerializer
     schema = AutoSchema(tags=['Users'])
 
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return serializers.UserEditSerializer
+        return serializers.UserSerializer
+
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
     def register(self, request):
         usr_srlz = self.get_serializer(data=request.data)
@@ -59,8 +64,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet, mixins.UpdateModelMixin, mixins
         token = RefreshToken.for_user(user)
         serialized = self.get_serializer(user)
         return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': serialized.data})
-        
-
 
     @action(detail=False, methods=['get'])
     def search(self, request, *args, **kwargs):
