@@ -13,12 +13,17 @@ class UserSerializer(ModelSerializer):
     def create(self, validated_data):
         user = CustomUser.objects.create_user(**validated_data)
         return user
-    
+
 class UserEditSerializer(ModelSerializer):
     events = StringRelatedField(many=True)
     class Meta:
         model = CustomUser
         fields = ['id', 'first_name', 'last_name', 'birthDate', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation', 'events']
+
+class GoogleUserSerializer(ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'first_name', 'last_name']
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

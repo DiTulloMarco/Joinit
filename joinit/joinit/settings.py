@@ -15,7 +15,7 @@ SECRET_KEY = environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost']
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
@@ -30,33 +30,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',
     'django_extensions',
     
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'corsheaders',
-
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.google",
-    "allauth.headless",
-    "allauth.usersessions",
-
+    
     # Our apps
     'users',
     'events'
 ]
-
-SITE_ID=1
-
-AUTHENTICATION_BACKEND = (
-    #'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-)
-
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -69,7 +53,7 @@ REST_FRAMEWORK = {
     #    'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
     ),
 }
-""" 
+
 REST_USE_JWT = True
 
 SIMPLE_JWT = {
@@ -91,7 +75,8 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
- """
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -100,13 +85,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    'allauth.account.middleware.AccountMiddleware',
     
     'corsheaders.middleware.CorsMiddleware',
 ]
-
-CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'joinit.urls'
 
@@ -186,27 +167,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL  = 'users.CustomUser'
 
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-ACCOUNT_AUTHENTICATION_METHOD = "email"
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = False
-ACCOUNT_LOGIN_BY_CODE_ENABLED = True
+CORS_ORIGIN_ALLOW_ALL = False
 
-HEADLESS_ONLY = True
-
-HEADLESS_FRONTEND_URLS = {
-    "account_confirm_email": "/account/verify-email/{key}",
-    "account_reset_password": "/account/password/reset",
-    "account_reset_password_from_key": "/account/password/reset/key/{key}",
-    "account_signup": "/account/signup",
-    "socialaccount_login_error": "/account/provider/callback",
-}
-
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "http")
-
-SECURE_SSL_REDIRECT = not DEBUG
-
-SESSION_COOKIE_SECURE = not DEBUG
-
-CSRF_COOKIE_SECURE = not DEBUG
+CORS_ORIGIN_WHITELIST = (
+    'http://localhost:3000',
+)

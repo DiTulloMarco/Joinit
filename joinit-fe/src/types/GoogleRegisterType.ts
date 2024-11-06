@@ -1,8 +1,6 @@
-export type User = {
-    id: number;
+export type GoogleRegisterType = {
     first_name: string;
     last_name: string;
     email: string;
-    birthDate: Date;
     profile_picture?: string;
   }

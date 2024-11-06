@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useContext, useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
@@ -11,10 +11,12 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { AppRoutes } from '@/enums/AppRoutes';
 
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
-import { getCSRFToken } from '@/auth/getCookies';
-import { cookies } from 'next/headers';
+import { jwtDecode, JwtPayload } from 'jwt-decode'
+import { User } from '@/types/User';
+import { GoogleRegisterType } from '@/types/GoogleRegisterType';
 
 const url = process.env.API_URL;
+const clientId = process.env.GOOGLE_CLIENT_ID;
 
 export default function Login() {
   
@@ -52,20 +54,24 @@ export default function Login() {
   
 
   const handleGoogleLoginSuccess = async (credentialResponse: CredentialResponse) => {
-    const { credential }  = credentialResponse;
+    const { credential } = credentialResponse;
+    try{
+      const jwt_decode: JwtPayload = jwtDecode(credential!); 
+      const userData: GoogleRegisterType = {
+        email: (jwt_decode as { email: string }).email,
+        first_name: (jwt_decode as { given_name: string }).given_name,
+        last_name: (jwt_decode as { family_name: string }).family_name,
+        profile_picture: (jwt_decode as { picture: string }).picture
+      };
+      const response = await axios.post(`${url}/users/signupWithGoogle/`, userData);
+      console.log(response.data);
+    }catch(error){
+      console.error(error);
+    }
+    console.log(credentialResponse);
+    login(credential!, '-1');
+    router.push(AppRoutes.EVENTS);
 
-    const csrfToken = getCSRFToken();
-
-    // Send the token to the backend
-    const response = await fetch('http://localhost:8001/accounts/browser/v1/auth/login', {
-      method: "POST",
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CsrfToken': csrfToken,
-      } 
-    })
-
-    console.log(response);
   };
 
   const handleGoogleLoginError = () => {
@@ -163,11 +169,7 @@ export default function Login() {
           </button>
         </form>
 
-        <GoogleOAuthProvider 
-          clientId=
-          //{process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
-          '467250512053-24qijerapbsr6sn0ti9dj3ha1peae1d5.apps.googleusercontent.com'
-        >
+        <GoogleOAuthProvider clientId='467250512053-24qijerapbsr6sn0ti9dj3ha1peae1d5.apps.googleusercontent.com'>
             <GoogleLogin 
               onSuccess={handleGoogleLoginSuccess}
               onError={handleGoogleLoginError}

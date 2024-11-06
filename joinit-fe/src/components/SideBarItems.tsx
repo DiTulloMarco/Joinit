@@ -44,12 +44,12 @@ export default function SidebarItems(props: Props) {
         {
         SideBarItems.map((item) => (
             item.url !== pathname ? (
-                <Link href={item.url} className={`flex items-center space-x-2 ${props.textClass} p-2 rounded`}>
+                <Link key={item.name} href={item.url} className={`flex items-center space-x-2 ${props.textClass} p-2 rounded`}>
                     <span className="material-icons">{item.icon}</span>
                     <span className="text-md">{item.name}</span>
                 </Link>
         ) : (
-            <Link href={item.url} onClick={props.toggleMenu} className={`flex items-center space-x-2 ${props.textClass} p-2 rounded`}>
+            <Link key={item.name} href={item.url} onClick={props.toggleMenu} className={`flex items-center space-x-2 ${props.textClass} p-2 rounded`}>
                 <span className="material-icons">{item.icon}</span>
                 <span className="text-md">{item.name}</span>
             </Link>
