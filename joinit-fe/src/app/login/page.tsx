@@ -39,7 +39,6 @@ export default function Login() {
               password: data.password,
           });
           const { user, access, refresh } = response.data;
-          console.log({ user, access, refresh });
           login(access, user.id);
           if (data.rememberMe) {
               localStorage.setItem('refreshToken', refresh);
@@ -47,9 +46,21 @@ export default function Login() {
           router.push(AppRoutes.EVENTS);
           setLoading(false);
           console.log( 'login success');
-      } catch (error) {
+      } catch (error: any) {
           console.error(error);
-          console.error( 'login failed');
+          if(error.response.data.detail.includes("No active account found with the given credentials")){
+            toast({
+              title: 'Errore', 
+              description: 'Credenziali non valide',
+              duration: 5000,
+            });
+            return;
+          }
+          toast({
+            title: 'Errore',
+            description: 'Login fallito',
+            duration: 5000,
+          });
           setLoading(false);
       };
   };
@@ -66,18 +77,27 @@ export default function Login() {
         profile_picture: (jwt_decode as { picture: string }).picture
       };
       const response = await axios.post(`${url}/users/signupWithGoogle/`, userData);
-      console.log(response.data);
+      const { user, access, refresh } = response.data;
+      login(access, user.id);
     }catch(error){
-      console.error(error);
+      toast({
+        title: 'Errore',
+        description: 'Login fallito',
+        duration: 5000,
+      });
+      return;
     }
     console.log(credentialResponse);
-    login(credential!, '-1');
     router.push(AppRoutes.EVENTS);
 
   };
 
   const handleGoogleLoginError = () => {
-    console.log('Login Failed');
+    toast({
+      title: 'Errore',
+      description: 'Credenziali Google non valide',
+      duration: 5000,
+    });
   };
 
   return (

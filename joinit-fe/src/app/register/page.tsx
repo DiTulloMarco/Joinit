@@ -7,6 +7,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { RegisterFormType } from '@/types/RegisterFormType';
 import { useRouter } from 'next/navigation';
 import { AppRoutes } from '@/enums/AppRoutes';
+import { toast } from '@/hooks/use-toast';
 
 const url = process.env.API_URL
 
@@ -37,7 +38,7 @@ export default function Register() {
     const onSubmit: SubmitHandler<RegisterFormType> = async (data) => {
         try {
             setLoading(true);
-            const response = await axios.post(`${url}/users/register`, data);
+            const response = await axios.post(`${url}/users/register/`, data);
             if (response.data.token) {
                 console.log(response.data);
                 const user = response.data.user;
@@ -47,12 +48,30 @@ export default function Register() {
                 localStorage.setItem('authToken', accessToken.access);
                 console.log( 'register success');
             }
+            toast({
+                title: 'Registrazione completata',
+                description: 'Registrazione effettuata con successo'
+              });
             setLoading(false);
             router.push(AppRoutes.LOGIN);
         }
-        catch (error) {
+        catch (error: any) {
             console.error('errore', error);
-            console.error( 'register failed');
+            console.log(error.response.data.email[0]);
+            if(error.response.data.email[0].includes("User with this email address already exists.")) {
+              toast({
+                title: 'Errore', 
+                description: 'esiste già un utente con questa email',
+                duration: 5000,
+              })
+            }else{
+
+              toast({
+                title: 'Errore', 
+                description: 'Errore durante la registrazione',
+                duration: 5000,
+              });
+            }
             setLoading(false);
         }
     }
