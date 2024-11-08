@@ -38,7 +38,7 @@ export default function Register() {
     const onSubmit: SubmitHandler<RegisterFormType> = async (data) => {
         try {
             setLoading(true);
-            const response = await axios.post(`${url}/users/register/`, data);
+            const response = await axios.post(`${url}/users/auth/register/`, data);
             if (response.data.token) {
                 console.log(response.data);
                 const user = response.data.user;

@@ -11,8 +11,12 @@ export default function MyEventsPage() {
   const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
   
   async function fetchEvents() {
-    const id = sessionStorage.getItem('userId');
-    const response = await axios.get(`${url}/users/${id}/get_user_events/`);
+    const response = await axios.get(`${url}/users/auth/user_events/`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+      }
+    });
     setMyEvents(response.data.results);
   }
 

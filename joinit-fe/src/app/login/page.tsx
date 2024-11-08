@@ -76,9 +76,9 @@ export default function Login() {
         last_name: (jwt_decode as { family_name: string }).family_name,
         profile_picture: (jwt_decode as { picture: string }).picture
       };
-      const response = await axios.post(`${url}/users/signupWithGoogle/`, userData);
-      const { user, access, refresh } = response.data;
-      login(access, user.id);
+      const response = await axios.post(`${url}/users/auth/signupWithGoogle/`, userData);
+      const { user, token } = response.data;
+      login(token.access, user.id);
     }catch(error){
       toast({
         title: 'Errore',

@@ -50,25 +50,24 @@ services:
   #  networks:
   #    - default
 
-  #frontend:
-  #  container_name: joinit-fe
-  #  build: 
-  #    context: ./joinit-fe
-  #    dockerfile: Dockerfile
-  #  restart: always
-  #  command: npm run dev
-  #  volumes:
-  #    - ./joinit-fe:/joinit
-  #    # Required to not break node modules.
-  #    - /usr/src/web/node_modules
-  #    # Required for next to do it's thing.
-  #    - /usr/src/web/.next
-  #  ports:
-  #    - 3001:3000
-  #  depends_on:
-  #    - api
-  #  networks:
-  #    - default
+  frontend:
+    container_name: joinit-fe
+    build: 
+      context: ./joinit-fe
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ./joinit-fe:/joinit
+      - /joinit/node_modules
+      - /joinit/.next
+    command: npm run dev
+    ports:
+      - 3000:3000
+      - 49153:49153
+    depends_on:
+      - api
+    networks:
+      - default
 
 networks:
   default:

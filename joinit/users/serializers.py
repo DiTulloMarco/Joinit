@@ -17,12 +17,17 @@ class UserSerializer(ModelSerializer):
 class UserEditSerializer(ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['birth_date', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation']
+        fields = ['first_name', 'last_name', 'email', 'birth_date', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation']
         extra_kwargs = {
             'can_join': {'write_only': True},
             'can_post': {'write_only': True},
             'can_comment': {'write_only': True}
         }
+
+class UserBaseInfoSerializer(ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'birth_date', 'profile_picture']
 
 class GoogleUserSerializer(ModelSerializer):
     class Meta:

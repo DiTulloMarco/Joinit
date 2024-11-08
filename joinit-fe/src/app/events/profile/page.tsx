@@ -8,6 +8,7 @@ import { AppRoutes } from '@/enums/AppRoutes';
 import { User } from '@/types/User';
 import { EditProfileFormType } from '@/types/EditProfileFormType';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { headers } from 'next/headers';
 
 const url = process.env.API_URL;
 
@@ -26,7 +27,12 @@ export default function ProfilePage() {
     try{
 
       const id = sessionStorage.getItem('userId');
-      const response = await axios.get(`${url}/users/${id}/`);
+      const response = await axios.get(`${url}/users/auth/profile/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        }
+      });
       setUserData(response.data);
     }catch{
       throw new Error('Failed to fetch user data');
@@ -36,7 +42,14 @@ export default function ProfilePage() {
   async function fetchEvents() {
     try{
       const id = sessionStorage.getItem('userId');
-      const response = await axios.get(`${url}/users/${id}/get_user_events/`);
+      const response = await axios.get(`${url}/users/auth/user_events/`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+          }
+        }
+      );
       setMyEvents(response.data.results);
     }catch{
       throw new Error('Failed to fetch user data');
@@ -51,7 +64,13 @@ export default function ProfilePage() {
 
   const onSubmit: SubmitHandler<EditProfileFormType> = async (data) => {
     try {
-        const response = await axios.put(`${url}/users/${userData.id}/`, data);
+        const response = await axios.patch(`${url}/users/auth/profile/`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+          },
+          body: data
+        });
         console.log(response.data);
         setUserData({...userData, ...response.data});
         toggleModal();
