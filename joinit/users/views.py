@@ -96,13 +96,13 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CustomUser.objects.all()
-    serializer_class = serializers.UserSerializer
+    serializer_class = serializers.UserBaseInfoSerializer
     schema = AutoSchema(tags=['Users'])
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
             return serializers.UserEditSerializer
-        return serializers.UserSerializer
+        return serializers.UserBaseInfoSerializer
 
     @action(detail=False, methods=['get'])
     def search(self, request, *args, **kwargs):
