@@ -56,8 +56,6 @@ class Event(models.Model):
 
     def save(self, *args, **kwargs):
         min_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        if self.creation_ts < timezone.now():
-            return super().save(*args, **kwargs)
         
         if self.participation_deadline < min_date:
             raise ValueError('Deadline ' + str(self.participation_deadline) + ' must be in the future or today: ' + str(min_date))
