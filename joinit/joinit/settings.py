@@ -153,7 +153,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL  = 'users.CustomUser'
 
 CORS_ORIGIN_ALLOW_ALL = False
-
 CORS_ORIGIN_WHITELIST = (
     'http://localhost:3000',
 )
+
+EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+EMAIL_FILE_PATH = "/app-emails/"
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.office365.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = environ.get('EMAIL_HOST_USER')
+SERVER_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')

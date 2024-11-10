@@ -29,6 +29,16 @@ class UserBaseInfoSerializer(ModelSerializer):
         model = CustomUser
         fields = ['first_name', 'last_name', 'birth_date', 'profile_picture']
 
+class SendPasswordRecoveryInfoSerializer(ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['email']
+
+class SetNewPasswordSerializer(ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['password']
+
 class GoogleUserSerializer(ModelSerializer):
     class Meta:
         model = CustomUser

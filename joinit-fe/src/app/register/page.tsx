@@ -8,6 +8,10 @@ import { RegisterFormType } from '@/types/RegisterFormType';
 import { useRouter } from 'next/navigation';
 import { AppRoutes } from '@/enums/AppRoutes';
 import { toast } from '@/hooks/use-toast';
+import { CredentialResponse, GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { GoogleRegisterType } from '@/types/GoogleRegisterType';
+import { AuthContext } from '@/hooks/authContext';
 
 const url = process.env.API_URL
 
@@ -19,62 +23,98 @@ export default function Register() {
         length: false,
         specialChar: false,
     });
-    const [loading, setLoading] = useState<boolean>(false);
-    const router = useRouter();
-    const password = watch('password');
-    const [showPassword, setShowPassword] = useState(false);
+    
+  const { login }: any = useContext(AuthContext);
+  const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
+  const password = watch('password');
+  const [showPassword, setShowPassword] = useState(false);
 
-    const handleClickShowPassword = () => setShowPassword((show) => !show);
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
 
-    useEffect(() => {
-        if (password) {
-            setPasswordCriteria({
-                length: password.length >= 8,
-                specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-            });
-        }
-    }, [password]);
+  useEffect(() => {
+      if (password) {
+          setPasswordCriteria({
+              length: password.length >= 8,
+              specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+          });
+      }
+  }, [password]);
 
-    const onSubmit: SubmitHandler<RegisterFormType> = async (data) => {
-        try {
-            setLoading(true);
-            const response = await axios.post(`${url}/users/auth/register/`, data);
-            if (response.data.token) {
-                console.log(response.data);
-                const user = response.data.user;
-                const userId = user.id;
-                const accessToken = response.data.token;
-                localStorage.setItem('userId', userId.toString());
-                localStorage.setItem('authToken', accessToken.access);
-                console.log( 'register success');
-            }
-            toast({
-                title: 'Registrazione completata',
-                description: 'Registrazione effettuata con successo'
-              });
-            setLoading(false);
-            router.push(AppRoutes.LOGIN);
-        }
-        catch (error: any) {
-            console.error('errore', error);
-            console.log(error.response.data.email[0]);
-            if(error.response.data.email[0].includes("User with this email address already exists.")) {
-              toast({
-                title: 'Errore', 
-                description: 'esiste già un utente con questa email',
-                duration: 5000,
-              })
-            }else{
-
-              toast({
-                title: 'Errore', 
-                description: 'Errore durante la registrazione',
-                duration: 5000,
-              });
-            }
-            setLoading(false);
-        }
+  const handleGoogleLoginSuccess = async (credentialResponse: CredentialResponse) => {
+    const { credential } = credentialResponse;
+    try{
+      const jwt_decode: JwtPayload = jwtDecode(credential!); 
+      const userData: GoogleRegisterType = {
+        email: (jwt_decode as { email: string }).email,
+        first_name: (jwt_decode as { given_name: string }).given_name,
+        last_name: (jwt_decode as { family_name: string }).family_name,
+        profile_picture: (jwt_decode as { picture: string }).picture
+      };
+      const response = await axios.post(`${url}/users/auth/signupWithGoogle/`, userData);
+      const { user, token } = response.data;
+      login(token.access, user.id);
+    }catch(error){
+      toast({
+        title: 'Errore',
+        description: 'Login fallito',
+        duration: 5000,
+      });
+      return;
     }
+    console.log(credentialResponse);
+    router.push(AppRoutes.EVENTS);
+
+  };
+
+  const handleGoogleLoginError = () => {
+    toast({
+      title: 'Errore',
+      description: 'Credenziali Google non valide',
+      duration: 5000,
+    });
+  };
+
+  const onSubmit: SubmitHandler<RegisterFormType> = async (data) => {
+      try {
+          setLoading(true);
+          const response = await axios.post(`${url}/users/auth/register/`, data);
+          if (response.data.token) {
+              console.log(response.data);
+              const user = response.data.user;
+              const userId = user.id;
+              const accessToken = response.data.token;
+              localStorage.setItem('userId', userId.toString());
+              localStorage.setItem('authToken', accessToken.access);
+              console.log( 'register success');
+          }
+          toast({
+              title: 'Registrazione completata',
+              description: 'Registrazione effettuata con successo'
+            });
+          setLoading(false);
+          router.push(AppRoutes.LOGIN);
+      }
+      catch (error: any) {
+          console.error('errore', error);
+          console.log(error.response.data.email[0]);
+          if(error.response.data.email[0].includes("User with this email address already exists.")) {
+            toast({
+              title: 'Errore', 
+              description: 'esiste già un utente con questa email',
+              duration: 5000,
+            })
+          }else{
+
+            toast({
+              title: 'Errore', 
+              description: 'Errore durante la registrazione',
+              duration: 5000,
+            });
+          }
+          setLoading(false);
+      }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center text-black bg-white dark:from-gray-800 dark:to-gray-900">
@@ -164,6 +204,13 @@ export default function Register() {
             Registrati
           </button>
         </form>
+        <GoogleOAuthProvider clientId='467250512053-24qijerapbsr6sn0ti9dj3ha1peae1d5.apps.googleusercontent.com'>
+            <GoogleLogin 
+              onSuccess={handleGoogleLoginSuccess}
+              onError={handleGoogleLoginError}
+            >
+            </GoogleLogin>
+        </GoogleOAuthProvider>
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600 dark:text-gray-400 pb-2">Hai già un account?</p>
         </div>

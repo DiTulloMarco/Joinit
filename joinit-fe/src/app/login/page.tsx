@@ -200,6 +200,10 @@ export default function Login() {
         </GoogleOAuthProvider>
 
         <div className="text-center mt-6">
+          <a href="/password-recover" className="form-label">Hai dimentrato la password?</a>
+        </div>
+        
+        <div className="text-center mt-6">
           <p className="form-label">Non hai un account?</p>
         </div>
         

@@ -9,12 +9,18 @@ from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
 from django.db.transaction import atomic
 from django.contrib.auth.hashers import make_password
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_str, force_bytes
 from django.contrib.auth.base_user import BaseUserManager
 
 
 from .models import CustomUser
 from . import  serializers
 from events.serializers import EventSerializer
+from users.token import token_generator
 
 # Create your views here.  
 
@@ -31,6 +37,13 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     schema = AutoSchema(tags=['Users'])
     
+    def get_serializer_class(self):
+        if self.action == 'send_reset_password_email':
+            return serializers.SendPasswordRecoveryInfoSerializer
+        if self.action == 'set_new_password':
+            return serializers.SetNewPasswordSerializer
+        return serializers.UserEditSerializer
+
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
     def register(self, request):
         usr_srlz = serializers.UserSerializer(data=request.data)
@@ -80,6 +93,41 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         token = RefreshToken.for_user(user)
         serialized = self.get_serializer(user)
         return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': serialized.data})
+    
+    @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
+    def send_reset_password_email(self, request):
+        user = CustomUser.objects.get(email=request.data['email'])
+        current_site = get_current_site(request)
+        mail_subject = 'Pinnalo - Reset Password'
+        message = render_to_string('reset_password.html', {
+            'user': user,
+            'domain': current_site.domain,  
+            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+            'token': token_generator.make_token(user),
+        })
+        try:
+            email = EmailMessage(mail_subject, message, to=[user.email])
+            email.extra_headers = {'Content-Type': 'text/html'}
+            email.send()
+        except Exception as e:
+            return Response({'Error': 'Email not sent, error: ' + e})
+
+        return Response({'Message': 'Reset password link sent to your email'})
+
+    @action(detail=False, methods=['PUT'], permission_classes=[AllowAny])
+    def set_new_password(self, request):
+        try:
+            uid = force_str(urlsafe_base64_decode(request.data['uidb64']))  
+            user = CustomUser.objects.get(id=uid)  
+        except(TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):  
+            user = None  
+            return Response({'Error': 'User not found'})
+        if user is not None and token_generator.check_token(user, request.data['token']):  
+            user.set_password(request.data['password'])  
+            user.save()  
+            return Response({'Your password has been set. Now you can login your account.'})  
+        else:  
+            return Response({'Password reset link is invalid!'})  
     
     @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
     def user_events(self, request):
