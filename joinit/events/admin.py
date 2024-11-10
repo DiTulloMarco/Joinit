@@ -29,4 +29,20 @@ class EventAdmin(admin.ModelAdmin):
             return [f.name for f in Event._meta.get_fields()]
         
 
-admin.site.register(Rating)
+@admin.register(Rating)
+class RatingAdmin(admin.ModelAdmin):
+    list_display = ('event', 'user', 'get_user_email', 'rating', 'review', 'created_at')
+    search_fields = ('user__email', 'event__name', 'review')
+    list_filter = ('created_at', 'event')
+
+    def get_user_email(self, obj):
+        return obj.user.email
+    
+    get_user_email.short_description = 'User Email'
+    get_user_email.admin_order_field = 'user__email'
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_staff or request.user.is_superuser:
+                return [f.name for f in Event._meta.get_fields() if f.name is not 'cancelled']
+        else:
+            return [f.name for f in Event._meta.get_fields()]
