@@ -1,9 +1,10 @@
 "use client";
 
 import { AppRoutes } from '@/enums/AppRoutes';
+import { AuthContext } from '@/hooks/authContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import React from 'react';
+import React, { useContext } from 'react';
 type Props = {
     textClass: string;
     selectedClass: string;
@@ -45,8 +46,14 @@ const SideBarItems = [
 
 export default function SidebarItems(props: Props) {
     const pathname = usePathname();
+    const { logout } = useContext(AuthContext);
+
   return (
     <nav className="flex flex-col space-y-8 mt-8">
+        <Link href={AppRoutes.LOGIN} onClick={logout} className="flex items-center space-x-1">
+            <span className="material-icons">logout</span>
+            <span className="text-md">Logout</span>
+        </Link>
         {
         SideBarItems.map((item) => (
             item.url !== pathname ? (
