@@ -55,7 +55,7 @@ export default function CreateEventPage() {
             render={({ field, fieldState: { error } }) => (
               <div>
                 <label htmlFor="name" className="form-label">
-                  Nome Evento
+                 
                 </label>
                 <input
                   type='name'
