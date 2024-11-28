@@ -56,7 +56,6 @@ export default function EventPage(queryString: any) {
     }
   };
   
-
   
   const setDefaultMap = () => {
     const defaultCoordinates = { lat: 41.9029083, lng: 12.5145139 }; // Sapienza default location
@@ -173,7 +172,7 @@ export default function EventPage(queryString: any) {
         },
       });
       console.log('Rating deleted successfully.');
-      await fetchRatings(); // Aggiorna la lista dei rating
+      await fetchRatings();
     } catch (error) {
       console.error('Error checking existing rating:', error);
       return null;
@@ -230,10 +229,6 @@ export default function EventPage(queryString: any) {
       }
     }
   };
-  
-  
-  
-  
 
   return (
     <main className="flex-1 p-8">
@@ -310,12 +305,14 @@ export default function EventPage(queryString: any) {
                       </div>
                       <p className="text-gray-500 text-sm ml-4">{new Date(rating.created_at).toLocaleDateString()}</p>
                     </div>
-                    <button
-                      onClick={() => deleteRating(rating.id)}
-                      className="text-red-500 hover:underline"
+                    {parseInt(sessionStorage.getItem('userId')!) === (rating as any).userId && (
+                      <button
+                        onClick={() => deleteRating(rating.id)}
+                        className="text-red-500 hover:underline"
                     >
                       Elimina
-                    </button>
+                     </button>
+                    )}
                   </div>
                   <p className="text-gray-700 mt-2">{rating.review}</p>
                 </div>
