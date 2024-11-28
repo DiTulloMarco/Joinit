@@ -9,7 +9,6 @@ import 'leaflet/dist/leaflet.css';
 
 const apiUrl = process.env.API_URL;
 const openCageApiKey = '6f6f04412260427eaaf85086d54b3d41';
-const userId = parseInt(sessionStorage.getItem('userId')!);
 
 type RatingFormType = {
   rating: number;
@@ -34,8 +33,6 @@ export default function EventPage(queryString: any) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-
   
   const fetchEvent = async () => {
     try {
@@ -58,34 +55,7 @@ export default function EventPage(queryString: any) {
       console.error('Error fetching ratings:', error);
     }
   };
-
-  const handleUpdateEvent = async () => {
-    const token = sessionStorage.getItem('authToken');
-    try {
-      const payload = {
-        ...event, 
-        name: event.name, 
-        description: event.description,
-        place: event.place,
-      };
   
-      const response = await axios.put(
-        `${apiUrl}/events/${eventId}/`,
-        payload,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-  
-      setEvent(response.data);
-      setIsEditing(false);
-      console.log('Event updated successfully:', response.data);
-    } catch (error) {
-      console.error('Error updating event:', error);
-    }
-  };
-  
-
   
   const setDefaultMap = () => {
     const defaultCoordinates = { lat: 41.9029083, lng: 12.5145139 }; // Sapienza default location
@@ -202,7 +172,7 @@ export default function EventPage(queryString: any) {
         },
       });
       console.log('Rating deleted successfully.');
-      await fetchRatings(); // Aggiorna la lista dei rating
+      await fetchRatings();
     } catch (error) {
       console.error('Error checking existing rating:', error);
       return null;
@@ -222,7 +192,6 @@ export default function EventPage(queryString: any) {
   
     try {
       console.log('User ID:', userId);
-      
   
       console.log('Checking existing rating...');
       const existingRating = await checkExistingRating();
@@ -261,75 +230,13 @@ export default function EventPage(queryString: any) {
     }
   };
 
-  
-  
-  
-  
-  
-
   return (
     <main className="flex-1 p-8">
-      <h2 className="text-3xl font-bold mb-4">{isEditing ? 'Modifica Evento' : event.name}</h2>
-
-        {(event as any).created_by === userId && !isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="primary-button"
-          >
-            Modifica Evento
-          </button>
-        )}
-
-        {isEditing ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleUpdateEvent();
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <label className="block text-gray-700">Nome</label>
-              <input
-                type="text"
-                value={event.name}
-                onChange={(e) => setEvent({ ...event, name: e.target.value })}
-                className="primary-input"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700">Descrizione</label>
-              <textarea
-                value={event.description}
-                onChange={(e) => setEvent({ ...event, description: e.target.value })}
-                className="primary-input"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700">Luogo</label>
-             <input
-                type="text"
-                value={event.place}
-                onChange={(e) => setEvent({ ...event, place: e.target.value })}
-                className="primary-input"
-              />
-            </div>
-            <div className="space-x-4">
-              <button type="submit" className="primary-button">Salva</button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="secondary-button"
-              >
-                Annulla
-              </button>
-            </div>
-          </form>
-        ) : (
-          <EventCard event={event} canJoin={canJoin} />
-        )}
-
-     
+      <h2 className="text-3xl font-bold mb-4">{event.name}</h2>
+      <EventCard
+        event={event}
+        canJoin={canJoin}
+      />
 
       <section className="mt-12">
         <h3 className="text-2xl font-bold mb-4">Map</h3>
