@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Event, Rating
+from .models import Event, Rating, Favorite
 from users.serializers import UserSerializer 
 from rest_framework.reverse import reverse 
 from decimal import Decimal
@@ -32,3 +32,11 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = '__all__'
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source="user.id")
+    event = serializers.ReadOnlyField(source="event.id")
+
+    class Meta:
+        model = Favorite
+        fields = ['id', 'user', 'event', 'created_at']

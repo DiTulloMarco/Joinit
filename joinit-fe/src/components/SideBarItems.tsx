@@ -41,6 +41,12 @@ const SideBarItems = [
         name: "Il Tuo Profilo",
         url: AppRoutes.MY_PROFILE,
         icon: "person"
+    },
+    {
+        id: 6,
+        name: "I Tuoi Preferiti",
+        url: AppRoutes.FAVORITES ,
+        icon: "favorite"
     }
 ]
 

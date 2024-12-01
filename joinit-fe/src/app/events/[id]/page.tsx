@@ -305,12 +305,14 @@ export default function EventPage(queryString: any) {
                       </div>
                       <p className="text-gray-500 text-sm ml-4">{new Date(rating.created_at).toLocaleDateString()}</p>
                     </div>
+                    {parseInt(sessionStorage.getItem('userId')!) === (rating as any).userId && (
                     <button
                       onClick={() => deleteRating(rating.id)}
                       className="text-red-500 hover:underline"
                     >
                       Elimina
                     </button>
+                    )}
                   </div>
                   <p className="text-gray-700 mt-2">{rating.review}</p>
                 </div>

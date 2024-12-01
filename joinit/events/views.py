@@ -8,8 +8,8 @@ from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
 from django.utils import timezone
 from users.models import CustomUser
-from .models import Event, Rating, EventType
-from .serializers import EventSerializer, RatingSerializer
+from .models import Event, Rating, EventType, Favorite
+from .serializers import EventSerializer, RatingSerializer, FavoriteSerializer
 
 
 class EventViewSet(ModelViewSet):
@@ -214,6 +214,35 @@ class EventViewSet(ModelViewSet):
             return Response({'status': 'Your participation has been cancelled.'}, status=status.HTTP_204_NO_CONTENT)
         except Participation.DoesNotExist:
             return Response({'error': 'You are not participating in this event.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
+    def toggle_favorite(self, request, pk=None):
+    
+        event = self.get_object()
+        user = request.user
+
+        favorite, created = Favorite.objects.get_or_create(user=user, event=event)
+        if not created:
+            favorite.delete()
+            return Response({'detail': 'Event removed from favorites.'}, status=status.HTTP_204_NO_CONTENT)
+
+        return Response({'detail': 'Event added to favorites.'}, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated])
+    def favorites(self, request):
+        favorites = Favorite.objects.filter(user=request.user).select_related("event")
+        serializer = EventSerializer([fav.event for fav in favorites], many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['GET'], permission_classes=[IsAuthenticated])
+    def is_favorite(self, request, pk=None):
+        event = self.get_object()
+        user = request.user
+
+        is_favorite = Favorite.objects.filter(user=user, event=event).exists()
+
+        return Response({'isFavorite': is_favorite}, status=status.HTTP_200_OK)
 
     """
     def list(self, request):

@@ -9,4 +9,5 @@ export enum AppRoutes {
     SEARCH = '/events/search',
     MY_EVENTS = '/events/myevents',
     MY_PROFILE = '/events/profile',
+    FAVORITES = '/events/favorites',
 }
