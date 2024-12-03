@@ -41,8 +41,7 @@ export default function PasswordRecover() {
           })
           router.push(AppRoutes.LOGIN);
       } catch (error: any) {
-          console.error(error);
-          if(error.response.data.detail.includes("No active account found with the given credentials")){
+          if(error.response.data.Error.includes("User not found")){
             toast({
               title: 'Errore', 
               description: 'Credenziali non valide',

@@ -96,7 +96,10 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
     def send_reset_password_email(self, request):
-        user = CustomUser.objects.get(email=request.data['email'])
+        try:
+            user = CustomUser.objects.get(email=request.data['email'])
+        except CustomUser.DoesNotExist:
+            return Response({'Error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         current_site = get_current_site(request)
         mail_subject = 'Pinnalo - Reset Password'
         message = render_to_string('reset_password.html', {
