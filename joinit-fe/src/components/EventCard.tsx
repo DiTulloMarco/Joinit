@@ -3,6 +3,7 @@ import { AppRoutes } from '@/enums/AppRoutes';
 import axios from 'axios';
 import { MyEvent } from '@/types/MyEvent';
 import { useToast } from '@/hooks/use-toast';
+import { pdf, Document, Page, Text, View, StyleSheet, Image} from '@react-pdf/renderer';
 
 const url = process.env.API_URL
 
@@ -117,6 +118,122 @@ export default function EventCard(props: EventCardProps) {
     })
   }
 
+  const handleExportEventData = async () => {
+
+    const PDFStyle = StyleSheet.create({
+      page : {
+        padding: 20,
+      },
+      section : {
+        marginBottom: "50px",
+      },
+      sameLine : {
+        flexDirection: "row",
+        marginBottom: "10px",
+      },
+      logoImage : {
+        width: 70,
+        height: "auto",
+      },
+      logoText : {
+        fontSize: "14px",
+        fontFamily: "Courier-Oblique",
+        letterSpacing: "3px",
+        textAlign: "center",
+        fontWeight: "bold",
+      },
+      title : {
+        fontSize: "43px",
+        fontFamily: "Times-Bold",
+        fontWeight: "bold",
+        letterSpacing: "2px",
+        textAlign: "center",
+        marginHorizontal: "auto",
+        marginBottom: "60px"
+      },
+      description : {
+        fontSize: "20px",
+        fontFamily: "Helvetica",
+        letterSpacing: "1px",
+        textAlign: "justify",
+      },
+      datetime : {
+        fontSize: "20px",
+        fontFamily: "Helvetica-Bold",
+        fontWeight: "bold",
+        letterSpacing: "1px",
+      },
+      header : {
+        justifyContent: "center",
+        marginTop: "10px",
+        marginBottom: "40px",
+      },
+      organiser : {
+        fontSize: "20px",
+        fontFamily: "Helvetica-Bold",
+        letterSpacing: "2px",
+        fontWeight: "bold",
+      },
+      location : {
+        fontSize: "20px",
+        fontFamily: "Helvetica-Bold",
+        fontWeight: "bold",
+        letterSpacing: "1px",
+      }
+    });
+
+    const eventPDF = (props: EventCardProps) => (
+      <Document>
+        <Page style={PDFStyle.page} size="A4">
+          <View style={PDFStyle.header}>
+            <Text style={PDFStyle.logoText}>Hosted on JoinIt</Text>
+          </View>
+
+          <View style={PDFStyle.section}>
+            <Text style={PDFStyle.title}>{props.event.name.toString()}</Text>
+
+            <Text style={PDFStyle.description} break>{props.event.description.toString()}</Text>
+
+          </View>
+          <View style={PDFStyle.section}>
+            <View style={PDFStyle.sameLine}>
+              <Text style={PDFStyle.description}>Inizio dell'evento: </Text>
+              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getDate() + "/" + (new Date(props.event.event_date).getMonth()+1).toString().padStart(2, "0") + "/" + (new Date(props.event.event_date).getFullYear())}</Text>
+              <Text style={PDFStyle.description}> alle ore </Text>
+              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getHours().toString().padStart(2, "0") + ":" + new Date(props.event.event_date).getMinutes().toString().padStart(2, "0")}</Text>
+            </View>
+
+            <View style={PDFStyle.sameLine}>
+              <Text style={PDFStyle.description}>Indirizzo: </Text>
+              <Text style={PDFStyle.location}>{props.event.place.toString()}</Text>
+            </View>
+          </View>
+        </Page>
+
+      </Document>
+    );
+
+    const pdfFile = await pdf(eventPDF(props)).toBlob();
+
+    const hiddenLink = document.createElement("a");
+    hiddenLink.href = URL.createObjectURL(pdfFile);
+    
+    var shortEventName = props.event.name.toString().length > 35 ? props.event.name.toString().substring(0, 35) : props.event.name.toString();
+    shortEventName = shortEventName.replace(/ /g,"_");
+    hiddenLink.download = shortEventName + ".pdf";
+    
+    hiddenLink.click();
+    URL.revokeObjectURL(hiddenLink.href);
+
+    toast({
+      title: 'File creato!',
+      description: "I dati dell'evento sono stati salvati",
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    })
+  }
+
   return (
     <div className="border rounded-lg flex flex-col space-y-7 place-items-center sm:flex-row p-4 sm:space-y-0 sm:space-x-7 bg-white shadow-md dark:bg-gray-900 dark:border-gray-700">
       <div className="min-w-32 h-32 w-32 bg-gray-200 rounded-md dark:bg-gray-700">
@@ -149,9 +266,14 @@ export default function EventCard(props: EventCardProps) {
         }
 
         { window.location.pathname.includes(AppRoutes.EVENT + props.event.id) &&
-          <button onClick={handleGetCalendarFile} className="secondary-button mt-2 min-w-28 opacity-60 !w-1/3 hover:underline">
-            Aggiungilo al tuo calendario!
-          </button>
+          <>
+            <button onClick={handleGetCalendarFile} className="secondary-button mt-2 min-w-28 opacity-60 !w-1/3 hover:underline">
+              Aggiungilo al tuo calendario!
+            </button>
+            <button onClick={handleExportEventData} className="secondary-button mt-2 min-w-28 opacity-60 !w-1/3 hover:underline">
+              Scarica i dati dell'evento
+            </button>
+          </>
         }
 
         { !window.location.pathname.includes(AppRoutes.EVENT + props.event.id) &&
