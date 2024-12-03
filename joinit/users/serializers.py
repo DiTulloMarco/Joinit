@@ -17,7 +17,7 @@ class UserSerializer(ModelSerializer):
 class UserEditSerializer(ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name', 'email', 'birth_date', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation']
+        fields = ['id', 'first_name', 'last_name', 'email', 'birth_date', 'can_join', 'can_post', 'can_comment', 'profile_picture', 'city', 'nation']
         extra_kwargs = {
             'can_join': {'write_only': True},
             'can_post': {'write_only': True},
