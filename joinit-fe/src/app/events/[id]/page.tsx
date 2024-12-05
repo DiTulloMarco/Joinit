@@ -18,6 +18,7 @@ export default function EventPage(queryString: any) {
   const [eventId, setEventId] = useState<number>(-1);
   const [event, setEvent] = useState<MyEvent>({} as MyEvent);
   const [canJoin, setCanJoin] = useState<boolean>(false);
+  const [numJoined, setNumJoined] = useState<number>(0);
   const { control, handleSubmit, formState: { errors } } = useForm<RatingFormType>()
 
   const fetchEvent = async () => { 
@@ -101,6 +102,7 @@ export default function EventPage(queryString: any) {
                   Invia
                 </button>
               </form>
+              {event.ratings?.length === 0 && <p className="w-1/2 min-w-50">Nessun commento</p>}
               {event.ratings?.map(rating => (
                 <div key={rating.id} className="p-4 border rounded-lg bg-white shadow-md">
                   <div className="flex items-center space-x-2">
