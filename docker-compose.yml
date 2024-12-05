@@ -34,35 +34,5 @@ services:
     networks:
       - default
 
-  #Nominatim:
-  #  container_name: joinit-geo
-  #  image: mediagis/nominatim:4.4
-  #  restart: always
-  #  ports:
-  #    - "8001:8000"
-  #  depends_on:
-  #    - db
-  #  networks:
-  #    - default
-
-  frontend:
-    container_name: joinit-fe
-    build: 
-      context: ./joinit-fe
-      dockerfile: Dockerfile
-    restart: always
-    volumes:
-      - ./joinit-fe:/joinit
-      - /joinit/node_modules
-      - /joinit/.next
-    command: npm run dev
-    ports:
-      - 3000:3000
-      - 49153:49153
-    depends_on:
-      - api
-    networks:
-      - default
-
 networks:
   default:

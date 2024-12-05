@@ -129,6 +129,7 @@ export default function EventCard(props: EventCardProps) {
           <button onClick={handleShareEvent} className='material-icons text-sm'>share</button>
         </div>
         <p className="text-gray-600 dark:text-gray-300 mt-2">
+          {props.event.joined_by?.length} partecipanti<br />
           {props.event.description}
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
