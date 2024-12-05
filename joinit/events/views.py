@@ -8,7 +8,7 @@ from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
 from django.utils import timezone
 from users.models import CustomUser
-from .models import Event, Rating, EventType
+from .models import Event, Rating
 from .serializers import EventSerializer, RatingSerializer
 
 
@@ -19,8 +19,8 @@ class EventViewSet(ModelViewSet):
     schema = AutoSchema(tags=['Events'])
 
     @action(detail=False, methods=['GET'])
-    def get_event_types(self, request):
-        event_types_choices = [choice[0] for choice in EventType.choices]
+    def event_types(self, request):
+        event_types_choices = [choice[1] for choice in Event.EventType.choices]
         return Response(event_types_choices, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['GET'], permission_classes=[IsAdminUser])

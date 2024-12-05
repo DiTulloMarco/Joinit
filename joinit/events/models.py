@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
-from datetime import timedelta
+from django.utils.translation import gettext_lazy as _
 
 from users.models import CustomUser
     
@@ -18,25 +18,25 @@ class Rating(models.Model):
 
     def __str__(self):
         return f'{self.user} rated {self.event}: {self.rating}'
-    
-
-class EventType(models.TextChoices):
-    CULTURE = "Culturale"
-    MUSIC = "Musica"
-    SPORT = "Sportivo"
-    ART = "Artistico"
-    HISTORY = "Storico"
-    EDUCATION = "Educativo"
-    HEALTH = "Sanitario"
-    ENTERTAINMENT = "Intrattenimento"
-    COMMERCE = "Commerciale"
-    OTHER = "Altro"
 
 class Event(models.Model):
+
+    class EventType(models.IntegerChoices):
+        COMMERCE = 0, _("Commerciale")
+        CULTURE = 1, _("Culturale")
+        MUSIC = 2, _("Musica")
+        SPORT = 3, _("Sportivo")
+        ART = 4, _("Artistico")
+        HISTORY = 5, _("Storico")
+        EDUCATION = 6, _("Educativo")
+        HEALTH = 7, _("Sanitario")
+        ENTERTAINMENT = 8, _("Intrattenimento")
+        OTHER = 9, _("Altro")
+
     name        = models.CharField(max_length=50) 
     description = models.CharField(max_length=1000)
     price       = models.DecimalField(max_digits=6, decimal_places=2, default=0.0)
-    category    = ArrayField(models.CharField(max_length=20, choices=EventType), blank=True, null=True)
+    category    = models.PositiveIntegerField(choices=EventType, default=EventType.OTHER, blank=True, null=True)
     tags        = ArrayField(models.CharField(max_length=30), blank=True, null=True) 
     place       = models.CharField(max_length=200, default="")
 
@@ -66,6 +66,7 @@ class Event(models.Model):
 
     def __str__(self):
         return self.name + ' - ' + self.place + ' - ' + str(self.event_date)
+    
     
     """ 
      {
