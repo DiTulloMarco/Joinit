@@ -15,6 +15,8 @@ from django.core.mail import EmailMessage
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_str, force_bytes
 from django.contrib.auth.base_user import BaseUserManager
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 
 from .models import CustomUser
@@ -36,6 +38,7 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     serializer_class = serializers.UserEditSerializer
     permission_classes = [IsAuthenticated]
     schema = AutoSchema(tags=['Users'])
+    parser_classes = [MultiPartParser, FormParser]
     
     def get_serializer_class(self):
         if self.action == 'send_reset_password_email':
@@ -63,8 +66,9 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         user = request.user
         serializer = self.get_serializer(instance=user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+
         
-        if serializer.validated_data['profile_picture'] is None and user.profile_picture:
+        if 'profile_picture' not in request.data and user.profile_picture:
             user.profile_picture.delete(save=False)
             user.profile_picture = None
 
