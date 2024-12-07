@@ -12,10 +12,16 @@ export default function EventsPage() {
   const [otherEvents, setOtherEvents] = useState<MyEvent[]>([]);
   
   async function fetchEvents() {
-    const response = await axios.get(`${url}/events/list_public/`);
-    setFeaturedEvent(response.data.results[0]); 
-    setOtherEvents(response.data.results.slice(1));
-  }
+    try {
+        const response = await axios.get(`${url}/events/list_public/`);
+        
+
+        setFeaturedEvent(response.data.results[0]); 
+        setOtherEvents(response.data.results.slice(1));
+    } catch (error) {
+        console.error("Errore durante il fetch degli eventi:", error);
+    }
+}
 
   useEffect(() => { 
     fetchEvents();

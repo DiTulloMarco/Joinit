@@ -131,15 +131,14 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     
     @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
     def user_events(self, request):
-        user = request.user
-        user_events = user.events.all().order_by('-event_date')
+        user_events = request.user.events.filter(cancelled=False).order_by('-event_date')
 
         page = self.paginate_queryset(user_events)
         if page is not None:
-            serializer = EventSerializer(page, many=True)
+            serializer = EventSerializer(page, many=True, context={'request': request})  
             return self.get_paginated_response(serializer.data)
-        
-        serializer = EventSerializer(user_events, many=True)
+
+        serializer = EventSerializer(user_events, many=True, context={'request': request})  
         return Response(serializer.data)
     
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
