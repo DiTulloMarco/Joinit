@@ -15,7 +15,7 @@ from django.core.mail import EmailMessage
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_str, force_bytes
 from django.contrib.auth.base_user import BaseUserManager
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
 
 
@@ -38,7 +38,7 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     serializer_class = serializers.UserEditSerializer
     permission_classes = [IsAuthenticated]
     schema = AutoSchema(tags=['Users'])
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def get_serializer_class(self):
         if self.action == 'send_reset_password_email':
