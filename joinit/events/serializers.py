@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from .models import Event, Rating, Favorite
 from users.serializers import UserSerializer 
@@ -28,10 +29,44 @@ class RatingSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     ratings = RatingSerializer(many=True, read_only=True)
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=30),
+        required=False,
+        default=list  
+    )
+    cover_image = serializers.ImageField(
+        required=False,
+        allow_null=True,
+        use_url=True  
+    )
 
     class Meta:
         model = Event
         fields = '__all__'
+        read_only_fields = ['created_by', 'creation_ts', 'last_modified_ts', 'joined_by']
+
+    def validate_tags(self, value):
+        if value in [None, ""]:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Tags must be a list of strings.")
+        for tag in value:
+            if not isinstance(tag, str) or not tag.strip():
+                raise serializers.ValidationError(f"Invalid tag: {tag}. Tags must be non-empty strings.")
+        return value
+
+    def validate_cover_image(self, value):
+        if value and not value.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+            raise serializers.ValidationError("Cover image must be a PNG, JPG, or JPEG file.")
+        return value
+    
+    def get_cover_image_url(self, obj):
+        if obj.cover_image:
+            cover_image_path = self.context['request'].build_absolute_uri(obj.cover_image.url)
+            print(f"Immagine trovata per l'evento '{obj.name}': {cover_image_path}")
+            return cover_image_path
+        print(f"Nessuna immagine trovata per l'evento '{obj.name}'")
+        return None
 
 class FavoriteSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source="user.id")

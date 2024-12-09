@@ -7,8 +7,9 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const apiUrl = process.env.API_URL;
+const url = process.env.API_URL;
 const openCageApiKey = '6f6f04412260427eaaf85086d54b3d41';
+
 
 type RatingFormType = {
   rating: number;
@@ -23,13 +24,27 @@ type Rating = {
   created_at: string;
 };
 
+type EventFormType = {
+  name: string;
+  description: string;
+  price: number;
+  category: number;
+  tags: string;
+  place: string;
+  event_date: string;
+  participation_deadline: string;
+  max_participants: number;
+  cover_image?: File | null;
+};
+
 export default function EventPage(queryString: any) {
   const [eventId, setEventId] = useState<number>(-1);
   const [event, setEvent] = useState<MyEvent>({} as MyEvent);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [canJoin, setCanJoin] = useState<boolean>(false);
-  const [numJoined, setNumJoined] = useState<number>(0);
-  const { control, handleSubmit, formState: { errors } } = useForm<RatingFormType>()
+  const [isCreator, setIsCreator] = useState<boolean>(false);
+  const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -37,10 +52,11 @@ export default function EventPage(queryString: any) {
   
   const fetchEvent = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/events/${eventId}/`);
+      const response = await axios.get(`${url}/events/${eventId}/`);
       setEvent(response.data);
       setCanJoin(!response.data.joined_by.includes(parseInt(sessionStorage.getItem('userId')!)));
-      console.log('Event data:', response.data);
+      setIsCreator(response.data.created_by === parseInt(sessionStorage.getItem('userId')!));
+      setImagePreview(response.data.cover_image || null);
     } catch (error) {
       console.error('Error loading event:', error);
     }
@@ -49,7 +65,7 @@ export default function EventPage(queryString: any) {
   
   const fetchRatings = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/events/${eventId}/ratings/`);
+      const response = await axios.get(`${url}/events/${eventId}/ratings/`);
       setRatings(response.data);
       console.log('Ratings data fetched:', response.data);
     } catch (error) {
@@ -125,7 +141,7 @@ export default function EventPage(queryString: any) {
       console.error('Error fetching coordinates:', error);
       setDefaultMap();
     }
-  };
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<EventFormType>();
 
   useEffect(() => {
     setEventId(queryString.params.id);
@@ -143,7 +159,7 @@ export default function EventPage(queryString: any) {
 
   const checkExistingRating = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/events/${eventId}/ratings/`);
+      const response = await axios.get(`${url}/events/${eventId}/ratings/`);
       console.log('Existing ratings:', response.data);
   
       const userId = parseInt(sessionStorage.getItem('userId')!);
@@ -166,7 +182,7 @@ export default function EventPage(queryString: any) {
     }
   
     try {
-      await axios.delete(`${apiUrl}/events/${eventId}/delete_rating/`, {
+      await axios.delete(`${url}/events/${eventId}/delete_rating/`, {
         data: { rating_id: ratingId },
         headers: {
           Authorization: `Bearer ${token}`,
@@ -197,7 +213,7 @@ export default function EventPage(queryString: any) {
       console.log('Checking existing rating...');
       const existingRating = await checkExistingRating();
   
-      const endpoint = `${apiUrl}/events/${eventId}/${existingRating ? 'update_rating/' : 'rate/'}`;
+      const endpoint = `${url}/events/${eventId}/${existingRating ? 'update_rating/' : 'rate/'}`;
       const method = existingRating ? 'put' : 'post';
   
       console.log(`Calling ${method.toUpperCase()} on endpoint: ${endpoint}`);
@@ -231,6 +247,48 @@ export default function EventPage(queryString: any) {
     }
   };
 
+  const onEditFormSubmit: SubmitHandler<EventFormType> = async (data) => {
+    try {
+      const formattedTags = data.tags
+        ? data.tags.split(',').map((tag) => tag.trim())
+        : []; 
+      const formData = new FormData();
+  
+      if (event.joined_by.length > data.max_participants) {
+        alert('Il numero massimo di partecipanti non può essere inferiore ai partecipanti attuali.');
+        return;
+      }
+  
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === 'tags') {
+          if (formattedTags.length === 0) {
+            formData.append('tags', JSON.stringify([]));
+          } else {
+            formattedTags.forEach((tag) => formData.append('tags', tag));
+          }
+        } else if (key === 'cover_image' && value instanceof File) {
+          formData.append(key, value);
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, typeof value === 'number' ? value.toString() : value);
+        }
+      });
+      const response = await axios.patch(`${url}/events/${eventId}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+      });
+  
+      console.log('Event updated:', response.data);
+      setEvent(response.data);
+      setEditModalOpen(false);
+      setImagePreview(response.data.cover_image || null);
+    } catch (error) {
+      console.error('Error updating event:', error);
+    }
+  };
+  
+
   return (
     <main className="flex-1 p-8">
       <h2 className="text-3xl font-bold mb-4">{event.name}</h2>
@@ -240,81 +298,59 @@ export default function EventPage(queryString: any) {
       />
 
       <section className="mt-12">
-        <h3 className="text-2xl font-bold mb-4">Map</h3>
-        <div
-          ref={mapContainerRef}
-          style={{ height: '700px', width: '100%' }}
-        />
-      </section>
-
-      <section className="mt-12">
-        {Date.parse(event.event_date) < Date.now() ? (
+        {Date.parse(event.event_date) < Date.now() ?
+          (
           <>
-            <h3 className="text-2xl font-bold mb-4">Comments</h3>
+            <h3 className="text-2xl font-bold mb-4">Commenti</h3>
             <div className="space-y-4">
               <form onSubmit={handleSubmit(onRatingFormSubmit)} className="flex-col items-center w-1/2 min-w-50 space-y-5">
-                <div className="flex items-center">
-                  <Controller
-                    name="rating"
-                    control={control}
-                    defaultValue={3}
-                    render={({ field, fieldState: { error } }) => (
-                      <>
-                        <select {...field} className="primary-input">
-                          <option value="0.5">0.5</option>
-                          <option value="1">1</option>
-                          <option value="1.5">1.5</option>
-                          <option value="2">2</option>
-                          <option value="2.5">2.5</option>
-                          <option value="3">3</option>
-                          <option value="3.5">3.5</option>
-                          <option value="4">4</option>
-                          <option value="4.5">4.5</option>
-                          <option value="5">5</option>
-                        </select>
-                        {error && <p className="text-red-600">{error.message}</p>}
-                      </>
-                    )}
-                  />
-                </div>
+              <div className="flex items-center">
+                <Controller
+                  name="rating"
+                  control={control}
+                  defaultValue={3}
+                  render={({ field, fieldState: { error } }) => (
+                    <>
+                      <select {...field} className="primary-input">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                      </select>
+                      {error && <p className="text-red-600">{error.message}</p>}
+                    </>
+                  )}
+                />
+              </div>
                 <Controller
                   name="review"
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
+                  render={({ field, fieldState: { error } }) => (
                     <textarea
-                      {...field}
-                      placeholder="Enter a comment"
-                      className="primary-input"
+                    {...field}
+                    placeholder="Inserisci un commento"
+                    className="primary-input"
                     />
                   )}
-                />
+                  />
                 <button type="submit" className="primary-button !w-1/2 min-w-50">
-                  Submit
+                  Invia
                 </button>
               </form>
-              {ratings.length === 0 && <p className="w-1/2 min-w-50">Nessun commento</p>}
-              {ratings.map(rating => (
+              {event.ratings?.length === 0 && <p className="w-1/2 min-w-50">Nessun commento</p>}
+              {event.ratings?.map(rating => (
                 <div key={rating.id} className="p-4 border rounded-lg bg-white shadow-md">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <p className="text-gray-800 font-semibold">{rating.user}</p>
-                      <div className="text-yellow-500 flex items-center">
-                        {[...Array(Math.floor(rating.rating))].map((_, i) => (
-                          <span key={i} className="material-icons">star</span>
-                        ))}
-                        {rating.rating % 1 !== 0 && <span className="material-icons">star_half</span>}
-                      </div>
-                      <p className="text-gray-500 text-sm ml-4">{new Date(rating.created_at).toLocaleDateString()}</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-gray-800 font-semibold">{rating.author_name}</p>
+                    <div className="text-yellow-500 flex items-center">
+                      {[...Array(Math.floor(rating.rating))].map((_, i) => (
+                        <span key={i} className="material-icons">star</span>
+                      ))}
+                      {rating.rating % 1 !== 0 && <span className="material-icons">star_half</span>}
                     </div>
-                    {parseInt(sessionStorage.getItem('userId')!) === (rating as any).userId && (
-                    <button
-                      onClick={() => deleteRating(rating.id)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Elimina
-                    </button>
-                    )}
+                    <p className="text-gray-500 text-sm ml-4">{rating.date}</p>
                   </div>
                   <p className="text-gray-700 mt-2">{rating.review}</p>
                 </div>
@@ -323,7 +359,7 @@ export default function EventPage(queryString: any) {
           </>
         ) : (
           <div className="w-1/2 min-w-50">
-            <p>The event has not started yet</p>
+            <p>Evento non ancora iniziato</p>
           </div>
         )}
       </section>

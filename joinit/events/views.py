@@ -10,6 +10,10 @@ from django.utils import timezone
 from users.models import CustomUser
 from .models import Event, Rating, EventType, Favorite
 from .serializers import EventSerializer, RatingSerializer, FavoriteSerializer
+from rest_framework.exceptions import ValidationError
+from django.utils.timezone import now
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+
 
 
 class EventViewSet(ModelViewSet):
@@ -17,6 +21,63 @@ class EventViewSet(ModelViewSet):
     queryset = Event.objects.order_by('-event_date')
     permission_classes = [AllowAny]
     schema = AutoSchema(tags=['Events'])
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
+
+    def update(self, request, *args, **kwargs):
+
+        event = self.get_object()
+
+        if event.created_by != request.user:
+            raise PermissionDenied("Solo il creatore dell'evento può modificarlo.")
+
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+
+        event = self.get_object()
+
+        if event.created_by != request.user:
+            raise PermissionDenied("Solo il creatore dell'evento può modificarlo.")
+
+        return super().partial_update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+
+        event = serializer.instance
+        participation_deadline = serializer.validated_data.get('participation_deadline', event.participation_deadline)
+        event_date = serializer.validated_data.get('event_date', event.event_date)
+
+        if participation_deadline and event_date and participation_deadline > event_date:
+            raise ValidationError("La scadenza per la partecipazione deve essere prima della data dell'evento.")
+        if participation_deadline and participation_deadline < now():
+            raise ValidationError("La scadenza per la partecipazione deve essere nel futuro.")
+        if 'cover_image' in self.request.FILES:
+            image = self.request.FILES['cover_image']
+            if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                raise ValidationError("Cover image must be a PNG, JPG, or JPEG file.")
+
+        serializer.save()
+        
+    def perform_create(self, serializer):
+
+        if 'cover_image' in self.request.FILES:
+            image = self.request.FILES['cover_image']
+            if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                raise ValidationError("Cover image must be a PNG, JPG, or JPEG file.")
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['DELETE'], permission_classes=[IsAuthenticated])
+    def remove_cover_image(self, request, pk=None):
+        """
+        Rimuove l'immagine di copertina dell'evento.
+        """
+        event = self.get_object()
+        if event.cover_image:
+            event.cover_image.delete(save=True)
+            event.cover_image = None
+            event.save()
+            return Response({'detail': 'Cover image removed successfully.'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'No cover image to remove.'}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['GET'])
     def event_types(self, request):
@@ -184,17 +245,20 @@ class EventViewSet(ModelViewSet):
     
     @action(detail=False, methods=['GET'], url_path='search')
     def search_events(self, request):
-        q = request.query_params.get('q', '')
-        filters = Q(is_private=False, cancelled=False)
-        if q:
-            filters = (
-                       Q(name__icontains=q) | 
-                       Q(description__icontains=q) | 
-                       Q(place__icontains=q) |
-                       Q(tags__overlap=[q]) |
-                       Q(category__overlap=[q])
-                    )
+        q = request.query_params.get('q', '').strip()
     
+        filters = Q(is_private=False, cancelled=False)
+
+        if q:
+            category_mapping = {label.lower(): value for value, label in Event.EventType.choices}
+            category_value = category_mapping.get(q.lower()) 
+
+            filters &= (
+                Q(name__icontains=q) |
+                Q(tags__overlap=[q]) |
+                (Q(category=category_value) if category_value is not None else Q())
+            )
+
         events = Event.objects.filter(filters).order_by('-event_date')
 
         page = self.paginate_queryset(events)

@@ -8,7 +8,6 @@ import { CreateEventFormType } from '@/types/CreateEventFormType';
 import { Category } from '@/types/Category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from "@/components/ui/badge"
-import { on } from 'events';
 
 const url = process.env.API_URL
 
@@ -17,11 +16,11 @@ export default function CreateEventPage() {
   const { control, handleSubmit, formState: { errors } } = useForm<CreateEventFormType>()
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [currentTag, setCurrentTag] = useState<string>(""); // Per memorizzare l'input corrente
   const router = useRouter();
 
   const fetchCategories = async () => {
     const response = await axios.get(`${url}/events/event_types/`);
-    console.log(response.data.map((v: string, i: number) => {return {id: i, name: v} as Category}))
     setCategories(response.data.map((v: string, i: number) => {return {id: i, name: v} as Category}));
   }
   
@@ -32,25 +31,42 @@ export default function CreateEventPage() {
 
   const onSubmit: SubmitHandler<CreateEventFormType> = async (data) => {
     try {
-        data.created_by = Number(sessionStorage.getItem('userId'));
-        data.joined_by = [Number(sessionStorage.getItem('userId'))];
-        const response = await axios.post(`${url}/events/`, data);
+        const formattedTags = data.tags ? data.tags.split(",").map(tag => tag.trim()) : [];
+        const payload = {
+            ...data,
+            tags: formattedTags,
+        };
+
+        const response = await axios.post(`${url}/events/`, payload, {
+            headers: {
+                Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+            },
+        });
         router.push(AppRoutes.MY_EVENTS);
-        console.log( 'event created');
+        console.log('Event created successfully');
     } catch (error) {
         console.error(error);
-        console.error( 'event creation failed');
-    };
-  }
+        console.error('Event creation failed');
+    }
+};
 
-  const handleAddTag = (tag: string) => {
-    setTags([...tags, tag])
-  };
+
   
-  const handleRemoveTag = (tag: string) => {
-    setTags([...tags].filter((value: string, index: number) => value !== tag));
-  }
-    
+
+const handleAddTag = (tag: string) => {
+  const trimmedTag = tag.trim();
+  if (!trimmedTag || tags.includes(trimmedTag)) return;
+  setTags((prevTags) => {
+      const updatedTags = [...prevTags, trimmedTag];
+      console.log("Tags aggiornati:", updatedTags);
+      return updatedTags;
+  });
+};
+
+const handleRemoveTag = (tag: string) => {
+  setTags(tags.filter((existingTag) => existingTag !== tag));
+};
+  
   return (
     <main className="flex-1 p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <h1 className="text-3xl font-bold mb-8 dark:text-white">Crea un Nuovo Evento</h1>
@@ -262,31 +278,27 @@ export default function CreateEventPage() {
               />
 
               <Controller
-                name="tags"
-                control={control}
-                render={({ field, fieldState: { error } }) => (
-                  <div>
-                    <label  
-                      htmlFor="tags" 
-                      className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
-                      >
-                      Tags
-                    </label>
-                    <input
-                      type='text'
-                      id="tags"
-                      placeholder="Inserisci i tag dell'evento"
-                      onChange={(e: any) => {
-                        if(!e.target.value.includes(" "))
-                          return;
-                        handleAddTag(e.target.value.trim())
-                        e.target.value = ""
-                      }}
-                      className='w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
-                    />
-                    <p className="text-red-500">{error?.message}</p>
-                  </div>
-                )}
+                  name="tags"
+                  control={control}
+                  defaultValue=""
+                  render={({ field, fieldState: { error } }) => (
+                      <div>
+                          <label
+                              htmlFor="tags"
+                              className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
+                          >
+                              Tags (separati da virgole)
+                          </label>
+                          <input
+                              type="text"
+                              id="tags"
+                              placeholder="Inserisci i tag separati da virgole"
+                              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                              {...field}
+                          />
+                          <p className="text-red-500">{error?.message}</p>
+                      </div>
+                  )}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
