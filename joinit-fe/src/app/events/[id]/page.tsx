@@ -41,7 +41,7 @@ export default function EventPage(queryString: any) {
     try {
         const response = await axios.post(`${url}/events/${eventId}/rate/`, { 
           ...data, 
-          userId: parseInt(sessionStorage.getItem('userId')!) 
+          userId: parseInt(sessionStorage.getItem('userId')!)
         });
         const { user, access, refresh } = response.data;
         console.log({ user, access, refresh });
@@ -51,6 +51,18 @@ export default function EventPage(queryString: any) {
         console.error( 'Rating submit failed');
     };
   };
+
+  const handleEventDeletion = async () => {
+    try {
+      const response = await axios.put(`${url}/events/${eventId}/cancel_event/`, {
+        userId: parseInt(sessionStorage.getItem('userId')!)
+      });
+
+      console.log('Event deletion was successful');
+    } catch (err) {
+      console.error('Evet deletion failed: ' + err);
+    }
+  }
 
   return (
     <main className="flex-1 p-8">
@@ -125,6 +137,38 @@ export default function EventPage(queryString: any) {
             <p>Evento non ancora iniziato</p>
           </div>
         )}
+
+        { event.cancelled == true &&
+          <div className="w-1/2 min-w-50 mt-12">
+            <p className='text-[#EA6666] text-sm ml-4'>Questo evento è stato cancellato</p>
+          </div>
+        }
+
+        { event.cancelled == false &&
+          event.created_by == parseInt(sessionStorage.getItem('userId')!) ?
+          (
+            <div className="w-1/2 min-w-50 mt-12">
+              <button onClick={handleEventDeletion} className='primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm'>Cancella l'evento<span className='material-icons text-[#ea3333]'>delete</span></button>
+            </div>
+          ) : (
+            <></>
+          )
+        
+        /**
+          event.cancelled == false ?
+          (
+            event.created_by == parseInt(sessionStorage.getItem('userId') ?
+            (
+              <div className="w-1/2 min-w-50 mt-12">
+                <button onClick={handleEventDeletion} className='primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm'>Cancella l'evento<span className='material-icons text-[#ea3333]'>delete</span></button>
+              </div>
+            ) : (
+              <div></div>
+            )
+          ) : (
+          )  
+        */
+        }
       </section>
     </main>
   );

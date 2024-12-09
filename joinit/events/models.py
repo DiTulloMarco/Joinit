@@ -66,25 +66,3 @@ class Event(models.Model):
 
     def __str__(self):
         return self.name + ' - ' + self.place + ' - ' + str(self.event_date)
-    
-    
-    """ 
-     {
-  "name": "Primo evento",
-  "description": "Il mio primo evento",
-  "category": [
-    "Culturale"
-  ],
-  "tags": [
-    "acculturati"
-  ],
-  "place": "via Roma 61, Napoli",
-  "event_date": "2024-10-25T20:08:00.994Z",
-  "participation_deadline": "2024-10-21T20:08:00.994Z",
-  "max_participants": 20,
-  "created_by": 0,
-  "joined_by": [
-    0
-  ]
-}
- """

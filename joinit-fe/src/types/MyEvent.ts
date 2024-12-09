@@ -8,4 +8,6 @@ export type MyEvent = {
     place: string;
     ratings?: Rating[];
     joined_by: number[];
+    is_private: boolean;
+    cancelled: boolean;
   }
