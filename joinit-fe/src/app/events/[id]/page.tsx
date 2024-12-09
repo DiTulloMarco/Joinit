@@ -50,17 +50,21 @@ export default function EventPage(queryString: any) {
     try {
       const formattedTags = data.tags
         ? data.tags.split(',').map((tag) => tag.trim())
-        : [];
+        : []; 
       const formData = new FormData();
   
       if (event.joined_by.length > data.max_participants) {
         alert('Il numero massimo di partecipanti non può essere inferiore ai partecipanti attuali.');
         return;
       }
-
+  
       Object.entries(data).forEach(([key, value]) => {
         if (key === 'tags') {
-          formattedTags.forEach((tag) => formData.append('tags', tag));
+          if (formattedTags.length === 0) {
+            formData.append('tags', JSON.stringify([]));
+          } else {
+            formattedTags.forEach((tag) => formData.append('tags', tag));
+          }
         } else if (key === 'cover_image' && value instanceof File) {
           formData.append(key, value);
         } else if (value !== null && value !== undefined) {
@@ -287,7 +291,7 @@ export default function EventPage(queryString: any) {
             {imagePreview && (
               <div className="mt-4">
                 <p>Anteprima:</p>
-                <img src={imagePreview} alt="Anteprima" className="rounded-md shadow-md" />
+                <img src={imagePreview} alt="Anteprima" className="rounded-md shadow-md max-w-full max-h-48" />
               </div>
             )}
             <div className="flex justify-between">

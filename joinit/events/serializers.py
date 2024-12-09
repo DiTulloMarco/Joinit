@@ -42,6 +42,8 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_by', 'creation_ts', 'last_modified_ts', 'joined_by']
 
     def validate_tags(self, value):
+        if value in [None, ""]:
+            return []
         if not isinstance(value, list):
             raise serializers.ValidationError("Tags must be a list of strings.")
         for tag in value:

@@ -12,7 +12,7 @@ from .models import Event, Rating
 from .serializers import EventSerializer, RatingSerializer
 from rest_framework.exceptions import ValidationError
 from django.utils.timezone import now
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 
 
@@ -21,7 +21,7 @@ class EventViewSet(ModelViewSet):
     queryset = Event.objects.order_by('-event_date')
     permission_classes = [AllowAny]
     schema = AutoSchema(tags=['Events'])
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     def update(self, request, *args, **kwargs):
 
@@ -226,20 +226,22 @@ class EventViewSet(ModelViewSet):
     
     @action(detail=False, methods=['GET'], url_path='search')
     def search_events(self, request):
-        q = request.query_params.get('q', '')
+        q = request.query_params.get('q', '').strip()
+    
         filters = Q(is_private=False, cancelled=False)
+
         if q:
-            filters = (
-                       Q(name__icontains=q) | 
-                       Q(description__icontains=q) | 
-                       Q(place__icontains=q) |
-                       Q(tags__overlap=[q]) |
-                       Q(category__overlap=[q])
-                    )
-        # Apply the filters to the queryset
+            category_mapping = {label.lower(): value for value, label in Event.EventType.choices}
+            category_value = category_mapping.get(q.lower()) 
+
+            filters &= (
+                Q(name__icontains=q) |
+                Q(tags__overlap=[q]) |
+                (Q(category=category_value) if category_value is not None else Q())
+            )
+
         events = Event.objects.filter(filters).order_by('-event_date')
 
-        # Paginate the result if necessary
         page = self.paginate_queryset(events)
         if page is not None:
             serialized_objs = self.get_serializer(page, many=True)
