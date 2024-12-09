@@ -101,7 +101,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-black bg-white dark:from-gray-800 dark:to-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 text-black dark:text-white transition-colors duration-300">
       <div className="bg-white dark:bg-gray-800 p-10 rounded-xl shadow-lg w-96">
         <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <Controller
@@ -109,8 +109,11 @@ export default function Login() {
             control={control}
             defaultValue=""
             rules={{
-              required: { value: true, message: 'L\'email è obbligatoria' },
-              pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'L\'email non è valida' }
+              required: { value: true, message: "L'email è obbligatoria" },
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: "L'email non è valida",
+              },
             }}
             render={({ field, fieldState: { error } }) => (
               <div>
@@ -124,7 +127,7 @@ export default function Login() {
                   className="primary-input"
                   {...field}
                   required
-                  />
+                />
               </div>
             )}
           />
@@ -133,11 +136,17 @@ export default function Login() {
             control={control}
             defaultValue={""}
             rules={{
-              required: { value: true, message: 'La password è obbligatoria' },
-              minLength: { value: 8, message: 'La password deve contenere almeno 8 caratteri' },
-              pattern: { value: /[!@#$%^&*(),.?":{}|<>]/, message: 'La password deve contenere almeno un carattere speciale' }
-          }}
-          render={({ field, fieldState: { error } }) => (
+              required: { value: true, message: "La password è obbligatoria" },
+              minLength: {
+                value: 8,
+                message: "La password deve contenere almeno 8 caratteri",
+              },
+              pattern: {
+                value: /[!@#$%^&*(),.?":{}|<>]/,
+                message: "La password deve contenere almeno un carattere speciale",
+              },
+            }}
+            render={({ field, fieldState: { error } }) => (
               <div>
                 <label htmlFor="password" className="form-label">
                   Password
@@ -161,9 +170,8 @@ export default function Login() {
                 </div>
                 {error && <p className="text-red-500 text-xs mt-1">{error.message}</p>}
               </div>
-
-                )}
-              />
+            )}
+          />
           <Controller
             name="rememberMe"
             control={control}
@@ -174,7 +182,7 @@ export default function Login() {
                   type="checkbox"
                   id="rememberMe"
                   className="mr-2"
-                  checked={!!field.value} // Ensuring value is boolean
+                  checked={!!field.value}
                   onChange={(e) => field.onChange(e.target.checked)}
                 />
                 <label htmlFor="rememberMe" className="form-label">
@@ -183,14 +191,14 @@ export default function Login() {
               </div>
             )}
           />
-          <button 
+          <button
             type='submit'
-            className="primary-button mt-2"
+            className="primary-button mt-2 bg-white text-black border border-gray-300 rounded-lg py-2 px-4 hover:bg-gray-100 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600 transition-colors duration-300"
           >
             Accedi
           </button>
         </form>
-
+  
         <GoogleOAuthProvider clientId='467250512053-24qijerapbsr6sn0ti9dj3ha1peae1d5.apps.googleusercontent.com'>
             <GoogleLogin 
               onSuccess={handleGoogleLoginSuccess}
@@ -198,26 +206,27 @@ export default function Login() {
             >
             </GoogleLogin>
         </GoogleOAuthProvider>
-
+  
         <div className="text-center mt-6">
-          <a href="/password-recover" className="form-label">Hai dimentrato la password?</a>
+          <a
+            href="/password-recover"
+            className="form-label underline hover:text-gray-600 dark:hover:text-gray-400 transition-colors duration-300"
+          >
+            Hai dimenticato la password?
+          </a>
         </div>
-        
+  
         <div className="text-center mt-6">
           <p className="form-label">Non hai un account?</p>
-        </div>
-        
-        <a href="/register"
-           className="primary-button mt-2"
+          <a
+            href="/register"
+            className="primary-button mt-2 bg-white text-black border border-gray-300 rounded-lg py-2 px-4 hover:bg-gray-100 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600 transition-colors duration-300"
           >
             Registrati
-        </a>
+          </a>
+        </div>
       </div>
     </div>
   );
+  
 }
-
-
-
-
-

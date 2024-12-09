@@ -8,8 +8,8 @@ from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
 from django.utils import timezone
 from users.models import CustomUser
-from .models import Event, Rating
-from .serializers import EventSerializer, RatingSerializer
+from .models import Event, Rating, EventType, Favorite
+from .serializers import EventSerializer, RatingSerializer, FavoriteSerializer
 
 
 class EventViewSet(ModelViewSet):
@@ -25,12 +25,10 @@ class EventViewSet(ModelViewSet):
 
     @action(detail=False, methods=['GET'], permission_classes=[IsAdminUser])
     def view_all_events(self, request):
-        # As an admin, return all events, including private and cancelled ones
-        events = Event.objects.all()  # No filter for private or cancelled events
+        events = Event.objects.all() 
         serializer = self.get_serializer(events, many=True)
         return Response(serializer.data)
     
-    # returns all public events
     @action(detail=False, methods=['GET'])
     def list_public(self, request):
         try:
@@ -46,8 +44,6 @@ class EventViewSet(ModelViewSet):
         serializer = self.get_serializer(events, many=True)
         return Response(serializer.data)
 
-
-    # Action to allow users to join an event
     @action(detail=True, methods=['PUT'])
     def join(self, request, pk=None):
         event = self.get_object()
@@ -109,59 +105,82 @@ class EventViewSet(ModelViewSet):
         event = self.get_object()
         try:
             user = CustomUser.objects.get(id=request.data['userId'])
+
             if not user.can_comment:
                 return Response({'detail': 'You are not allowed to comment or rate events.'}, status=status.HTTP_403_FORBIDDEN)
-
+    
             if not event.joined_by.filter(id=user.id).exists():
                 return Response({'detail': 'You cannot rate an event you did not participate in.'}, status=status.HTTP_403_FORBIDDEN)
 
-            # Check if the user has already rated the event
             existing_rating = Rating.objects.filter(user=user, event=event).first()
             if existing_rating:
                 return Response({'detail': 'You have already rated this event.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            rate_srlz = RatingSerializer(data={'user': request.data['userId'], 'event': event.id, 'rating': request.data['rating'], 'review': request.data['review']})
+
+            rate_srlz = RatingSerializer(data={
+                'rating': request.data['rating'],
+                'review': request.data['review']
+            })
+
             if rate_srlz.is_valid():
-                rate_srlz.save()
+                rate_srlz.save(user=user, event=event)
                 return Response(rate_srlz.data, status=status.HTTP_201_CREATED)
+
             return Response(rate_srlz.errors, status=status.HTTP_400_BAD_REQUEST)
-        except (CustomUser.DoesNotExist):
+
+        except CustomUser.DoesNotExist:
             return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Add a method to list event ratings
+
+
     @action(detail=True, methods=['GET'], permission_classes=[AllowAny])
     def ratings(self, request, pk=None):
         event = self.get_object()
         ratings = Rating.objects.filter(event=event)
         serializer = RatingSerializer(ratings, many=True)
         return Response(serializer.data)
+
     
     @action(detail=True, methods=['PUT'], permission_classes=[IsAuthenticated])
     def update_rating(self, request, pk=None):
         event = self.get_object()
+        user = request.user 
+
         if not user.can_comment:
             return Response({'detail': 'You are not allowed to comment or rate events.'}, status=status.HTTP_403_FORBIDDEN)
-
-    # Ensure the user has already rated the event
-        existing_rating = Rating.objects.filter(user=request.user, event=event).first()
+    
+        existing_rating = Rating.objects.filter(user=user, event=event).first()
         if not existing_rating:
             return Response({'detail': 'You have not rated this event yet.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Parse and validate the updated rating and review values
+    
         rating_data = {
             'rating': request.data.get('rating'),
-            'review': request.data.get('review', existing_rating.review)  # Default to the previous review if not provided
+            'review': request.data.get('review', existing_rating.review)
         }
 
-        # Update the existing rating
-        serializer = RatingSerializer(existing_rating, data=rating_data, partial=True)  # Use partial update
+        serializer = RatingSerializer(existing_rating, data=rating_data, partial=True)
         if serializer.is_valid():
             serializer.save()
-
-            # Indicate the rating has been updated
             return Response({'detail': 'Rating updated successfully.', 'rating': serializer.data}, status=status.HTTP_200_OK)
-    
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['DELETE'], permission_classes=[IsAuthenticated])
+    def delete_rating(self, request, pk=None):
+        event = self.get_object()
+        user = request.user  
+
+        try:
+            rating = Rating.objects.filter(user=user, event=event).first()
+
+            if not rating:
+                return Response({'detail': 'You have not rated this event.'}, status=status.HTTP_404_NOT_FOUND)
+
+            rating.delete()  
+            return Response({'detail': 'Your rating has been deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
+        except Exception as e:
+            return Response({'detail': f'An error occurred: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
     
     @action(detail=False, methods=['GET'], url_path='search')
     def search_events(self, request):
@@ -175,10 +194,9 @@ class EventViewSet(ModelViewSet):
                        Q(tags__overlap=[q]) |
                        Q(category__overlap=[q])
                     )
-        # Apply the filters to the queryset
+    
         events = Event.objects.filter(filters).order_by('-event_date')
 
-        # Paginate the result if necessary
         page = self.paginate_queryset(events)
         if page is not None:
             serialized_objs = self.get_serializer(page, many=True)
@@ -192,10 +210,39 @@ class EventViewSet(ModelViewSet):
         event = self.get_object()
         try:
             participation = Participation.objects.get(user=request.user, event=event)
-            participation.delete()  # Remove participation
+            participation.delete() 
             return Response({'status': 'Your participation has been cancelled.'}, status=status.HTTP_204_NO_CONTENT)
         except Participation.DoesNotExist:
             return Response({'error': 'You are not participating in this event.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
+    def toggle_favorite(self, request, pk=None):
+    
+        event = self.get_object()
+        user = request.user
+
+        favorite, created = Favorite.objects.get_or_create(user=user, event=event)
+        if not created:
+            favorite.delete()
+            return Response({'detail': 'Event removed from favorites.'}, status=status.HTTP_204_NO_CONTENT)
+
+        return Response({'detail': 'Event added to favorites.'}, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated])
+    def favorites(self, request):
+        favorites = Favorite.objects.filter(user=request.user).select_related("event")
+        serializer = EventSerializer([fav.event for fav in favorites], many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['GET'], permission_classes=[IsAuthenticated])
+    def is_favorite(self, request, pk=None):
+        event = self.get_object()
+        user = request.user
+
+        is_favorite = Favorite.objects.filter(user=user, event=event).exists()
+
+        return Response({'isFavorite': is_favorite}, status=status.HTTP_200_OK)
 
     """
     def list(self, request):

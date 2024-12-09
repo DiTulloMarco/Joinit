@@ -9,12 +9,12 @@ from users.models import CustomUser
 class Rating(models.Model):
     event = models.ForeignKey('Event', on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    rating = models.DecimalField(max_digits=2, decimal_places=1, choices=[(x/2, str(x/2)) for x in range(2, 11)])  # 1.0 to 5.0 with 0.5 intervals
-    review = models.TextField(blank=True, null=True)  # Optional review text
+    rating = models.DecimalField(max_digits=2, decimal_places=1, choices=[(x/2, str(x/2)) for x in range(2, 11)])
+    review = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'event')  # Prevent multiple ratings for the same event by the same user
+        unique_together = ('user', 'event')  
 
     def __str__(self):
         return f'{self.user} rated {self.event}: {self.rating}'
@@ -67,24 +67,16 @@ class Event(models.Model):
     def __str__(self):
         return self.name + ' - ' + self.place + ' - ' + str(self.event_date)
     
+    #User stories  17 
+class Favorite(models.Model):
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, related_name="favorites")
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="favorited_by")
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'event')
+
+    def __str__(self):
+        return f'{self.user} favorited {self.event}'
+
     
-    """ 
-     {
-  "name": "Primo evento",
-  "description": "Il mio primo evento",
-  "category": [
-    "Culturale"
-  ],
-  "tags": [
-    "acculturati"
-  ],
-  "place": "via Roma 61, Napoli",
-  "event_date": "2024-10-25T20:08:00.994Z",
-  "participation_deadline": "2024-10-21T20:08:00.994Z",
-  "max_participants": 20,
-  "created_by": 0,
-  "joined_by": [
-    0
-  ]
-}
- """
