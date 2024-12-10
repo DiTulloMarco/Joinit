@@ -8,7 +8,7 @@ from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
 from django.utils import timezone
 from users.models import CustomUser
-from .models import Event, Rating, EventType, Favorite
+from .models import Event, Rating, Favorite
 from .serializers import EventSerializer, RatingSerializer, FavoriteSerializer
 from rest_framework.exceptions import ValidationError
 from django.utils.timezone import now
@@ -296,7 +296,7 @@ class EventViewSet(ModelViewSet):
     @action(detail=False, methods=['GET'], permission_classes=[IsAuthenticated])
     def favorites(self, request):
         favorites = Favorite.objects.filter(user=request.user).select_related("event")
-        serializer = EventSerializer([fav.event for fav in favorites], many=True)
+        serializer = EventSerializer([fav.event for fav in favorites], many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['GET'], permission_classes=[IsAuthenticated])
