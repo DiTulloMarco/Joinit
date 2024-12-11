@@ -15,8 +15,8 @@ export default function DarkModeToggle() {
   }, [darkMode]);
 
   return (
-    <button 
-      onClick={() => setDarkMode(!darkMode)} 
+    <button
+      onClick={() => setDarkMode(!darkMode)}
       className="p-2 bg-gray-300 dark:bg-gray-700 rounded text-gray-900 dark:text-gray-100">
       {darkMode ? <MdLightMode size={24} /> : <MdDarkMode size={24} />}
     </button>

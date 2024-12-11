@@ -86,7 +86,7 @@ export default function ProfilePage() {
       {userData &&
         <div className="flex items-center justify-start mb-8">
           <Image
-            src={userData.profile_picture ? userData.profile_picture : "https://via.placeholder.com/50"}
+            src={userData.profile_picture && userData.profile_picture.startsWith('/') ? userData.profile_picture: "https://via.placeholder.com/50"}
             width={50}
             height={50}
             alt="Profile"
