@@ -13,5 +13,7 @@ export type MyEvent = {
     max_participants: number;
     ratings?: Rating[];
     joined_by: number[];
+    is_private: boolean;
+    cancelled: boolean;
     cover_image?: File | null;
   }

@@ -1,7 +1,9 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
+import { AppRoutes } from '@/enums/AppRoutes';
 import axios from 'axios';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
 import L from 'leaflet';
@@ -14,6 +16,7 @@ type RatingFormType = {
   rating: number;
   review: string;
 };
+
 
 type Rating = {
   id: number;
@@ -37,6 +40,7 @@ type EventFormType = {
 };
 
 export default function EventPage(queryString: any) {
+  const router = useRouter();
   const [eventId, setEventId] = useState<number>(-1);
   const [event, setEvent] = useState<MyEvent>({} as MyEvent);
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -167,6 +171,7 @@ export default function EventPage(queryString: any) {
 
   const onEditFormSubmit: SubmitHandler<EventFormType> = async (data) => {
     try {
+
       const formData = new FormData();
   
       Object.entries(data).forEach(([key, value]) => {
@@ -195,6 +200,19 @@ export default function EventPage(queryString: any) {
     }
   };
   
+
+  const handleEventDeletion = async () => {
+    try {
+      const response = await axios.put(`${url}/events/${eventId}/cancel_event/`, {
+        userId: parseInt(sessionStorage.getItem('userId')!)
+      });
+
+      console.log('Event deletion was successful');
+      router.push(AppRoutes.MY_EVENTS);
+    } catch (err) {
+      console.error('Evet deletion failed: ' + err);
+    }
+  }
 
   return (
     <main className="flex-1 p-8">
@@ -340,6 +358,23 @@ export default function EventPage(queryString: any) {
             <p>Evento non ancora iniziato</p>
           </div>
         )}
+
+        { event.cancelled == true &&
+          <div className="w-1/2 min-w-50 mt-12">
+            <p className='text-[#EA6666] text-sm ml-4'>Questo evento è stato cancellato</p>
+          </div>
+        }
+
+        { event.cancelled == false &&
+          event.created_by == parseInt(sessionStorage.getItem('userId')!) ?
+          (
+            <div className="w-1/2 min-w-50 mt-12">
+              <button onClick={handleEventDeletion} className='primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm'>Cancella l'evento<span className='material-icons text-[#ea3333]'>delete</span></button>
+            </div>
+          ) : (
+            <></>
+          )
+        }
       </section>
       {isCreator && (
         <div className="mt-4">

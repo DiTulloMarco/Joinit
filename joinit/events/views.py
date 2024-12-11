@@ -319,12 +319,20 @@ class EventViewSet(ModelViewSet):
         # return a particular event (specified by pk)
         pass
 
-    def update(self, request, pk=None):
-        pass
+    @action(detail=True, methods=['put'])
+    def cancel_event(self, request, pk=None):
+        event: Event = self.get_object()
+        
+        try:            
+            user = CustomUser.objects.get(id=request.data['userId'])
 
-    def partial_update(self, request, pk=None):
-        pass
-
-    def destroy(self, request, pk=None):
-        pass
-    """
+            if event.created_by != user:
+                return Response({'error': 'Only the owner of the event can delete the event.'}, status=status.HTTP_403_FORBIDDEN)
+            elif event.cancelled == True:
+                return Response({'status': 'This event has already been cancelled.'}, status=status.HTTP_204_NO_CONTENT)
+            else:
+                event.cancelled = True
+                event.save()
+                return Response({'status': 'This event has been cancelled.'}, status=status.HTTP_200_OK)
+        except:
+            return Response({'error': 'Unable to cancel the event.'}, status=status.HTTP_400_BAD_REQUEST)
