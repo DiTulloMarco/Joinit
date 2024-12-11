@@ -1,7 +1,9 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
+import { AppRoutes } from '@/enums/AppRoutes';
 import axios from 'axios';
 import { Rating } from '@/types/Rating';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -14,7 +16,8 @@ type RatingFormType = {
 }
 
 export default function EventPage(queryString: any) {
-
+  
+  const router = useRouter();
   const [eventId, setEventId] = useState<number>(-1);
   const [event, setEvent] = useState<MyEvent>({} as MyEvent);
   const [canJoin, setCanJoin] = useState<boolean>(false);
@@ -59,6 +62,7 @@ export default function EventPage(queryString: any) {
       });
 
       console.log('Event deletion was successful');
+      router.push(AppRoutes.MY_EVENTS);
     } catch (err) {
       console.error('Evet deletion failed: ' + err);
     }
