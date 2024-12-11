@@ -366,7 +366,7 @@ export default function EventPage(queryString: any) {
         }
 
         { event.cancelled == false &&
-          event.created_by == parseInt(sessionStorage.getItem('userId')!) ?
+          isCreator ?
           (
             <div className="w-1/2 min-w-50 mt-12">
               <button onClick={handleEventDeletion} className='primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm'>Cancella l'evento<span className='material-icons text-[#ea3333]'>delete</span></button>

@@ -307,18 +307,7 @@ class EventViewSet(ModelViewSet):
         is_favorite = Favorite.objects.filter(user=user, event=event).exists()
 
         return Response({'isFavorite': is_favorite}, status=status.HTTP_200_OK)
-
-    """
-    def list(self, request):
-        pass
-
-    def create(self, request):
-        pass
-
-    def retrieve(self, request, pk=None):
-        # return a particular event (specified by pk)
-        pass
-
+    
     @action(detail=True, methods=['put'])
     def cancel_event(self, request, pk=None):
         event: Event = self.get_object()
@@ -336,3 +325,16 @@ class EventViewSet(ModelViewSet):
                 return Response({'status': 'This event has been cancelled.'}, status=status.HTTP_200_OK)
         except:
             return Response({'error': 'Unable to cancel the event.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    """
+    def list(self, request):
+        pass
+
+    def create(self, request):
+        pass
+
+    def retrieve(self, request, pk=None):
+        # return a particular event (specified by pk)
+        pass
+
+    """

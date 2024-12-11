@@ -33,7 +33,8 @@ export default function FavoriteEventsPage() {
       <h1 className="text-3xl font-bold mb-8">I Tuoi Eventi Preferiti</h1>
       <section className="grid grid-cols-1 gap-6">
         {favoriteEvents && favoriteEvents.length > 0 ? (
-          favoriteEvents.map((event) => (
+          favoriteEvents.filter((event) => !event.cancelled) 
+          .map((event) => (
             <EventCard
               key={event.id}
               event={event}
