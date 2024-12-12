@@ -56,7 +56,13 @@ export default function UserProfilePage() {
           Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
         },
       });
-      setUserEvents(response.data.results);
+
+      const filteredEvents = response.data.results.filter((event: MyEvent) => {
+        const isParticipant = event.joined_by.includes(authenticatedUserId);
+        return (!event.is_private || isParticipant) && !event.cancelled;
+      })
+
+      setUserEvents(filteredEvents);
     } catch (error) {
       console.error('Errore nel recupero degli eventi:', error);
     }
@@ -109,10 +115,10 @@ export default function UserProfilePage() {
         <div className="flex items-center justify-start mb-8">
           <Image
             src={userData.profile_picture ? userData.profile_picture : "https://via.placeholder.com/50"}
-            width={80}
-            height={80}
+            width={160}
+            height={160}
             alt="Profile"
-            className="w-20 h-20 rounded-full object-cover mr-4"
+            className="w-40 h-40 rounded-lg overflow-hidden border-4 border-gray-300 shadow-lg mr-6 flex items-center justify-center"
           />
           <div>
             <h1 className="text-4xl font-bold">{userData.first_name} {userData.last_name}</h1>

@@ -8,6 +8,7 @@ from decimal import Decimal
 class RatingSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     userId = serializers.ReadOnlyField(source='user.id') 
+    event_id = serializers.ReadOnlyField(source='event.id')
     rating = serializers.DecimalField(max_digits=2, decimal_places=1)  # Keep it as decimal,please
 
     class Meta:

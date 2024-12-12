@@ -67,8 +67,11 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         serializer = self.get_serializer(instance=user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        
-        if 'profile_picture' not in request.data and user.profile_picture:
+        if 'profile_picture' in request.FILES:
+            user.profile_picture.delete(save=False)
+            user.profile_picture = request.FILES['profile_picture']
+
+        if 'profile_picture' in request.data and not request.data['profile_picture']:
             user.profile_picture.delete(save=False)
             user.profile_picture = None
 
@@ -177,10 +180,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         page = self.paginate_queryset(user_events)
         if page is not None:
-            serializer = EventSerializer(page, many=True)
+            serializer = EventSerializer(page, many=True,context={'request': request})
             return self.get_paginated_response(serializer.data)
         
-        serializer = EventSerializer(user_events, many=True)
+        serializer = EventSerializer(user_events, many=True,context={'request': request})
         return Response(serializer.data)
     
 class TokenRefreshView(TokenRefreshView):

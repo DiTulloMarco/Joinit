@@ -70,20 +70,19 @@ class Event(models.Model):
     def save(self, *args, **kwargs):
         min_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
-        if self.participation_deadline < min_date:
+        if self.participation_deadline and self.participation_deadline < min_date:
             raise ValueError('Deadline ' + str(self.participation_deadline) + ' must be in the future or today: ' + str(min_date))
-        if self.participation_deadline > self.event_date:
+        if self.participation_deadline and self.event_date and self.participation_deadline > self.event_date:
             raise ValueError('Participation deadline must be before event date')
         
         if self.pk:
             previous = Event.objects.filter(pk=self.pk).first()
             if self.cover_image and (not previous or self.cover_image != previous.cover_image):
                 current_hash = self._calculate_file_hash(self.cover_image)
-                
-                # Cerca un'immagine con lo stesso hash
+
                 existing_events = Event.objects.filter(cover_image__isnull=False)
                 for event in existing_events:
-                    if event.pk != self.pk:
+                    if event.pk != self.pk and event.cover_image:
                         file_path = Path(event.cover_image.path)
                         if file_path.exists():
                             with open(file_path, 'rb') as f:
@@ -91,10 +90,9 @@ class Event(models.Model):
                                 if current_hash == existing_hash:
                                     self.cover_image = event.cover_image
                                     break
-
-            # Rimuove l'immagine precedente se aggiornata
             if previous and previous.cover_image and self.cover_image != previous.cover_image:
-                previous.cover_image.delete(save=False)
+                if previous.cover_image and Path(previous.cover_image.path).exists():
+                    previous.cover_image.delete(save=False)
         
         super().save(*args, **kwargs)
 

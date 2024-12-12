@@ -53,6 +53,7 @@ export default function EventPage(queryString: any) {
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const [mapHeight] = useState(400);
 
   const {
     control: ratingControl,
@@ -197,6 +198,34 @@ export default function EventPage(queryString: any) {
     }
   };
 
+  const onRatingFormSubmit: SubmitHandler<RatingFormType> = async (data) => {
+    const token = sessionStorage.getItem('authToken');
+    const userId = sessionStorage.getItem('userId');
+  
+    if (!token || !userId) return;
+  
+    try {
+      const existingRating = await checkExistingRating();
+  
+      const endpoint = existingRating
+        ? `${url}/events/${eventId}/update_rating/`
+        : `${url}/events/${eventId}/rate/`;
+      const method = existingRating ? 'put' : 'post';
+  
+      const payload = { ...data, userId: parseInt(userId) };
+  
+      await axios[method](endpoint, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      console.log(`${existingRating ? 'Updated' : 'Created'} rating successfully.`);
+      await fetchRatings(); 
+    } catch (error) {
+      console.error('Error checking existing rating:', error);
+      return null;
+    }
+  };
+  
   const deleteRating = async (ratingId: number) => {
     const token = sessionStorage.getItem('authToken');
     if (!token) {
@@ -206,48 +235,44 @@ export default function EventPage(queryString: any) {
   
     try {
       await axios.delete(`${url}/events/${eventId}/delete_rating/`, {
-        data: { rating_id: ratingId },
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       console.log('Rating deleted successfully.');
-      await fetchRatings();
+      await fetchRatings(); 
     } catch (error) {
-      console.error('Error checking existing rating:', error);
+      console.error('Error delete rating:', error);
       return null;
     }
   };
   
-  
-
-  const onRatingFormSubmit: SubmitHandler<RatingFormType> = async (data) => {
-    const token = sessionStorage.getItem('authToken');
-    const userId = sessionStorage.getItem('userId');
-
-    if (!token || !userId) return;
-
-    const payload = { ...data, userId: parseInt(userId) };
-    const response = await axios.post(`${url}/events/${eventId}/rate/`, payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    fetchRatings();
-  };
 
   const onEditFormSubmit: SubmitHandler<EventFormType> = async (data) => {
     try {
-
+      const formattedTags = data.tags
+        ? data.tags.split(',').map((tag) => tag.trim())
+        : [];
       const formData = new FormData();
   
+      if (event.joined_by.length > data.max_participants) {
+        alert('Il numero massimo di partecipanti non può essere inferiore ai partecipanti attuali.');
+        return;
+      }
+  
       Object.entries(data).forEach(([key, value]) => {
-        if (key === 'tags' && typeof value === 'string') {
-          value.split(',').forEach((tag: string) => {
-            formData.append('tags', tag.trim());
-          });
+        if (key === 'tags') {
+          if (formattedTags.length === 0) {
+            formData.append('tags', JSON.stringify([]));
+          } else {
+            formattedTags.forEach((tag) => formData.append('tags', tag));
+          }
+        } else if (key === 'participation_deadline' && value === event.participation_deadline) {
+          return;
         } else if (key === 'cover_image' && value instanceof File) {
           formData.append(key, value);
         } else if (value !== null && value !== undefined) {
-          formData.append(key, value.toString());
+          formData.append(key, typeof value === 'number' ? value.toString() : value);
         }
       });
   
@@ -258,12 +283,15 @@ export default function EventPage(queryString: any) {
         },
       });
   
+      console.log('Event updated:', response.data);
       setEvent(response.data);
-      console.log('Event updated successfully:', response.data);
+      setEditModalOpen(false);
+      setImagePreview(response.data.cover_image || null);
     } catch (error) {
       console.error('Error updating event:', error);
     }
   };
+  
   
 
   const handleEventDeletion = async () => {
@@ -283,7 +311,11 @@ export default function EventPage(queryString: any) {
     <main className="flex-1 p-8">
       <h2 className="text-3xl font-bold mb-4">{event.name}</h2>
       <EventCard event={event} canJoin={canJoin} />
-      <div ref={mapContainerRef} className="h-64 w-full mb-8 rounded-lg shadow-md relative z-10" />
+      <div
+        ref={mapContainerRef}
+        style={{ height: `${mapHeight}px`, width: "100%" }}
+        className="h-64 w-full mb-8 rounded-lg shadow-md relative z-10"
+      />
       <section className="mt-8 space-y-4">
         <div>
           <h3 className="text-xl font-semibold">Descrizione</h3>
@@ -340,15 +372,15 @@ export default function EventPage(queryString: any) {
           <p className="text-gray-700">{event.price} €</p>
         </div>
       </section>
-
+  
       <section className="mt-12">
         <h3 className="text-2xl font-bold mb-4">Partecipanti</h3>
         {participants.length > 0 ? (
           <ul className="list-disc pl-6">
             {event.joined_by.map((userId: number, index: number) => (
               <li key={index} className="text-gray-800">
-                <a 
-                  href={`http://localhost:3000/events/profile/${userId}`} 
+                <a
+                  href={`http://localhost:3000/events/profile/${userId}`}
                   className="text-blue-500 hover:underline"
                 >
                   {participants[index] || `Partecipante ${userId}`}
@@ -360,7 +392,7 @@ export default function EventPage(queryString: any) {
           <p className="text-gray-500">Nessun partecipante al momento.</p>
         )}
       </section>
-
+  
       <section className="mt-12">
         {Date.parse(event.event_date) < Date.now() ? (
           <>
@@ -378,13 +410,17 @@ export default function EventPage(queryString: any) {
                     render={({ field, fieldState: { error } }) => (
                       <>
                         <select {...field} className="primary-input">
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                          <option value="3">3</option>
-                          <option value="4">4</option>
-                          <option value="5">5</option>
+                          {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(
+                            (value) => (
+                              <option key={value} value={value}>
+                                {value}
+                              </option>
+                            )
+                          )}
                         </select>
-                        {error && <p className="text-red-600">{error.message}</p>}
+                        {error && (
+                          <p className="text-red-600">{error.message}</p>
+                        )}
                       </>
                     )}
                   />
@@ -416,21 +452,34 @@ export default function EventPage(queryString: any) {
                     key={rating.id}
                     className="p-4 border rounded-lg bg-white shadow-md"
                   >
-                    <div className="flex items-center space-x-2">
-                      <p className="text-gray-800 font-semibold">{rating.user}</p>
-                      <div className="text-yellow-500 flex items-center">
-                        {[...Array(Math.floor(rating.rating))].map((_, i) => (
-                          <span key={i} className="material-icons">
-                            star
-                          </span>
-                        ))}
-                        {rating.rating % 1 !== 0 && (
-                          <span className="material-icons">star_half</span>
-                        )}
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-gray-800 font-semibold">
+                          {rating.user}
+                        </p>
+                        <div className="text-yellow-500 flex items-center">
+                          {[...Array(Math.floor(rating.rating))].map((_, i) => (
+                            <span key={i} className="material-icons">
+                              star
+                            </span>
+                          ))}
+                          {rating.rating % 1 !== 0 && (
+                            <span className="material-icons">star_half</span>
+                          )}
+                        </div>
+                        <p className="text-gray-500 text-sm">
+                          {new Date(rating.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                      <p className="text-gray-500 text-sm ml-4">
-                        {new Date(rating.created_at).toLocaleDateString()}
-                      </p>
+                      {parseInt(sessionStorage.getItem("userId")!) ===
+                        (rating as any).userId && (
+                        <button
+                          onClick={() => deleteRating(rating.id)}
+                          className="text-red-500 hover:underline"
+                        >
+                          Elimina
+                        </button>
+                      )}
                     </div>
                     <p className="text-gray-700 mt-2">{rating.review}</p>
                   </div>
@@ -443,24 +492,28 @@ export default function EventPage(queryString: any) {
             <p>Evento non ancora iniziato</p>
           </div>
         )}
-
-        { event.cancelled == true &&
-          <div className="w-1/2 min-w-50 mt-12">
-            <p className='text-[#EA6666] text-sm ml-4'>Questo evento è stato cancellato</p>
-          </div>
-        }
-
-        { event.cancelled == false &&
-          isCreator ?
-          (
-            <div className="w-1/2 min-w-50 mt-12">
-              <button onClick={handleEventDeletion} className='primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm'>Cancella l'evento<span className='material-icons text-[#ea3333]'>delete</span></button>
-            </div>
-          ) : (
-            <></>
-          )
-        }
       </section>
+  
+      {event.cancelled && (
+        <div className="w-1/2 min-w-50 mt-12">
+          <p className="text-[#EA6666] text-sm ml-4">
+            Questo evento è stato cancellato
+          </p>
+        </div>
+      )}
+  
+      {!event.cancelled && isCreator && (
+        <div className="w-1/2 min-w-50 mt-12">
+          <button
+            onClick={handleEventDeletion}
+            className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm"
+          >
+            Cancella l'evento
+            <span className="material-icons text-[#ea3333]">delete</span>
+          </button>
+        </div>
+      )}
+  
       {isCreator && (
         <div className="mt-4">
           <button
@@ -472,7 +525,9 @@ export default function EventPage(queryString: any) {
               setValue("category", event.category);
               setValue(
                 "tags",
-                Array.isArray(event.tags) ? event.tags.join(", ") : event.tags || ""
+                Array.isArray(event.tags)
+                  ? event.tags.join(", ")
+                  : event.tags || ""
               );
               setValue("place", event.place);
               setValue("event_date", event.event_date);
@@ -528,16 +583,13 @@ export default function EventPage(queryString: any) {
               defaultValue={0}
               render={({ field }) => (
                 <select {...field} className="primary-input">
-                  <option value="0">Commerciale</option>
-                  <option value="1">Culturale</option>
-                  <option value="2">Musica</option>
-                  <option value="3">Sportivo</option>
-                  <option value="4">Artistico</option>
-                  <option value="5">Storico</option>
-                  <option value="6">Educativo</option>
-                  <option value="7">Sanitario</option>
-                  <option value="8">Intrattenimento</option>
-                  <option value="9">Altro</option>
+                  {["Commerciale", "Culturale", "Musica", "Sportivo", "Artistico", "Storico", "Educativo", "Sanitario", "Intrattenimento", "Altro"].map(
+                    (label, value) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    )
+                  )}
                 </select>
               )}
             />
@@ -559,32 +611,6 @@ export default function EventPage(queryString: any) {
               defaultValue=""
               render={({ field }) => (
                 <input {...field} placeholder="Luogo" className="primary-input" />
-              )}
-            />
-            <Controller
-              name="event_date"
-              control={eventControl}
-              defaultValue=""
-              render={({ field }) => (
-                <input
-                  {...field}
-                  type="datetime-local"
-                  placeholder="Data Evento"
-                  className="primary-input"
-                />
-              )}
-            />
-            <Controller
-              name="participation_deadline"
-              control={eventControl}
-              defaultValue=""
-              render={({ field }) => (
-                <input
-                  {...field}
-                  type="datetime-local"
-                  placeholder="Scadenza Partecipazione"
-                  className="primary-input"
-                />
               )}
             />
             <Controller
@@ -642,5 +668,5 @@ export default function EventPage(queryString: any) {
       )}
     </main>
   );
-  
+
 }

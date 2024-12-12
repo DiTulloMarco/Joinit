@@ -44,7 +44,7 @@ class EventViewSet(ModelViewSet):
     def perform_update(self, serializer):
 
         event = serializer.instance
-        participation_deadline = serializer.validated_data.get('participation_deadline', event.participation_deadline)
+        participation_deadline = serializer.validated_data.get('participation_deadline', None)
         event_date = serializer.validated_data.get('event_date', event.event_date)
 
         if participation_deadline and event_date and participation_deadline > event_date:
@@ -161,35 +161,26 @@ class EventViewSet(ModelViewSet):
         return Response(serializer.data)
     
 
-    @action(detail=True, methods=['POST'])
+    @action(detail=True, methods=['POST'], permission_classes=[IsAuthenticated])
     def rate(self, request, pk=None):
         event = self.get_object()
-        try:
-            user = CustomUser.objects.get(id=request.data['userId'])
+        user = request.user
 
-            if not user.can_comment:
-                return Response({'detail': 'You are not allowed to comment or rate events.'}, status=status.HTTP_403_FORBIDDEN)
-    
-            if not event.joined_by.filter(id=user.id).exists():
-                return Response({'detail': 'You cannot rate an event you did not participate in.'}, status=status.HTTP_403_FORBIDDEN)
+        if not user.can_comment:
+            return Response({'detail': 'You are not allowed to comment or rate events.'}, status=status.HTTP_403_FORBIDDEN)
 
-            existing_rating = Rating.objects.filter(user=user, event=event).first()
-            if existing_rating:
-                return Response({'detail': 'You have already rated this event.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not event.joined_by.filter(id=user.id).exists():
+            return Response({'detail': 'You cannot rate an event you did not participate in.'}, status=status.HTTP_403_FORBIDDEN)
 
-            rate_srlz = RatingSerializer(data={
-                'rating': request.data['rating'],
-                'review': request.data['review']
-            })
+        existing_rating = Rating.objects.filter(user=user, event=event).first()
+        if existing_rating:
+            return Response({'detail': 'You have already rated this event.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            if rate_srlz.is_valid():
-                rate_srlz.save(user=user, event=event)
-                return Response(rate_srlz.data, status=status.HTTP_201_CREATED)
+        serializer = RatingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=user, event=event)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            return Response(rate_srlz.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        except CustomUser.DoesNotExist:
-            return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 

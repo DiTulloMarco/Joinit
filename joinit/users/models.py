@@ -38,16 +38,12 @@ class CustomUser(AbstractUser):
 
     def save(self, *args, **kwargs):
         if self.pk:
-            previous = CustomUser.objects.filter(pk=self.pk).first()
-
-            
+            previous = CustomUser.objects.filter(pk=self.pk).first()   
             if self.profile_picture and self.profile_picture != previous.profile_picture:
                 current_hash = self._calculate_file_hash(self.profile_picture)
-
-                
                 existing_users = CustomUser.objects.filter(profile_picture__isnull=False)
                 for user in existing_users:
-                    if user.pk != self.pk: 
+                    if user.pk != self.pk and user.profile_picture and user.profile_picture.path:
                         file_path = Path(user.profile_picture.path)
                         if file_path.exists():
                             with open(file_path, 'rb') as f:
@@ -55,8 +51,6 @@ class CustomUser(AbstractUser):
                                 if current_hash == existing_hash:
                                     self.profile_picture = user.profile_picture
                                     break
-
-            
             if previous and previous.profile_picture and self.profile_picture != previous.profile_picture:
                 previous.profile_picture.delete(save=False)
 
