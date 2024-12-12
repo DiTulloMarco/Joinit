@@ -21,8 +21,14 @@ class UserEditSerializer(ModelSerializer):
         extra_kwargs = {
             'can_join': {'write_only': True},
             'can_post': {'write_only': True},
-            'can_comment': {'write_only': True}
+            'can_comment': {'write_only': True},
+            'profile_picture': {'required': False},
         }
+    def update(self, instance, validated_data):
+        profile_picture = validated_data.pop('profile_picture', None)
+        if profile_picture:
+            instance.profile_picture = profile_picture
+        return super().update(instance, validated_data)
 
 class UserBaseInfoSerializer(ModelSerializer):
     class Meta:

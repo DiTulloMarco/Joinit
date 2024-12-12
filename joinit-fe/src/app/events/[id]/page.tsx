@@ -48,6 +48,8 @@ export default function EventPage(queryString: any) {
   const [isCreator, setIsCreator] = useState<boolean>(false);
   const [editModalOpen, setEditModalOpen] = useState<boolean>(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const { control, handleSubmit, formState: { errors } } = useForm<RatingFormType>();
+  const [participants, setParticipants] = useState<string[]>([]);
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -78,6 +80,21 @@ export default function EventPage(queryString: any) {
     setRatings(response.data);
   };
 
+  const fetchParticipants = async () => {
+    try {
+      const responses = await Promise.all(
+        event.joined_by.map((userId: number) =>
+          axios.get(`${url}/users/${userId}/`).then((res) => res.data)
+        )
+      );
+      setParticipants(responses.map((user) => `${user.first_name} ${user.last_name}`));
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+    }
+  };
+  
+  
+  
   const setDefaultMap = () => {
     const defaultCoordinates = { lat: 41.9029083, lng: 12.5145139 }; // Sapienza default location
     if (mapInstanceRef.current) {
@@ -155,6 +172,54 @@ export default function EventPage(queryString: any) {
       fetchCoordinatesAndRenderMap();
     }
   }, [event.place]);
+
+  useEffect(() => {
+    if (event.joined_by && event.joined_by.length > 0) {
+        fetchParticipants();
+    }
+  }, [event.joined_by]);
+
+
+  const checkExistingRating = async () => {
+    try {
+      const response = await axios.get(`${url}/events/${eventId}/ratings/`);
+      console.log('Existing ratings:', response.data);
+  
+      const userId = parseInt(sessionStorage.getItem('userId')!);
+  
+      const existingRating = response.data.find((rating: any) => rating.userId === userId);
+  
+      console.log('Existing rating found:', existingRating);
+      return existingRating;
+    } catch (error) {
+      console.error('Error checking existing rating:', error);
+      return null;
+    }
+  };
+
+  const deleteRating = async (ratingId: number) => {
+    const token = sessionStorage.getItem('authToken');
+    if (!token) {
+      console.error('User not authenticated');
+      return;
+    }
+  
+    try {
+      await axios.delete(`${url}/events/${eventId}/delete_rating/`, {
+        data: { rating_id: ratingId },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log('Rating deleted successfully.');
+      await fetchRatings();
+    } catch (error) {
+      console.error('Error checking existing rating:', error);
+      return null;
+    }
+  };
+  
+  
 
   const onRatingFormSubmit: SubmitHandler<RatingFormType> = async (data) => {
     const token = sessionStorage.getItem('authToken');
@@ -274,6 +339,26 @@ export default function EventPage(queryString: any) {
           <h3 className="text-xl font-semibold">Prezzo</h3>
           <p className="text-gray-700">{event.price} €</p>
         </div>
+      </section>
+
+      <section className="mt-12">
+        <h3 className="text-2xl font-bold mb-4">Partecipanti</h3>
+        {participants.length > 0 ? (
+          <ul className="list-disc pl-6">
+            {event.joined_by.map((userId: number, index: number) => (
+              <li key={index} className="text-gray-800">
+                <a 
+                  href={`http://localhost:3000/events/profile/${userId}`} 
+                  className="text-blue-500 hover:underline"
+                >
+                  {participants[index] || `Partecipante ${userId}`}
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500">Nessun partecipante al momento.</p>
+        )}
       </section>
 
       <section className="mt-12">

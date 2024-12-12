@@ -11,7 +11,8 @@ const nextConfig = {
             {
                 protocol: 'http', 
                 hostname: 'localhost', 
-                pathname: '/media/**',
+                port: '8001', 
+                pathname: '/media/**', 
             },
         ],
     },
