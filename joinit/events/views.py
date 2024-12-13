@@ -38,14 +38,11 @@ class EventViewSet(ModelViewSet):
 
         if event.created_by != request.user:
             raise PermissionDenied("Solo il creatore dell'evento può modificarlo.")
-
         return super().partial_update(request, *args, **kwargs)
 
     def perform_update(self, serializer):
-
-        event = serializer.instance
         participation_deadline = serializer.validated_data.get('participation_deadline', None)
-        event_date = serializer.validated_data.get('event_date', event.event_date)
+        event_date = serializer.validated_data.get('event_date', None)
 
         if participation_deadline and event_date and participation_deadline > event_date:
             raise ValidationError("La scadenza per la partecipazione deve essere prima della data dell'evento.")
@@ -302,20 +299,34 @@ class EventViewSet(ModelViewSet):
     @action(detail=True, methods=['put'])
     def cancel_event(self, request, pk=None):
         event: Event = self.get_object()
-        
-        try:            
+
+        try:
             user = CustomUser.objects.get(id=request.data['userId'])
 
             if event.created_by != user:
-                return Response({'error': 'Only the owner of the event can delete the event.'}, status=status.HTTP_403_FORBIDDEN)
-            elif event.cancelled == True:
-                return Response({'status': 'This event has already been cancelled.'}, status=status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {'error': 'Only the owner of the event can delete the event.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            elif event.cancelled:
+                return Response(
+                    {'status': 'This event has already been cancelled.'},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
             else:
                 event.cancelled = True
-                event.save()
-                return Response({'status': 'This event has been cancelled.'}, status=status.HTTP_200_OK)
-        except:
-            return Response({'error': 'Unable to cancel the event.'}, status=status.HTTP_400_BAD_REQUEST)
+                # Disabilita la validazione delle date
+                event.save(validate_dates=False)
+                return Response(
+                    {'status': 'This event has been cancelled.'},
+                    status=status.HTTP_200_OK,
+                )
+        except Exception as e:
+            return Response(
+                {'error': 'Unable to cancel the event.', 'details': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+        )
+
 
     """
     def list(self, request):

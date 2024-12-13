@@ -42,6 +42,10 @@ export default function CreateEventPage() {
                 Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
             },
         });
+        const eventId = response.data.id;
+        await axios.put(`${url}/events/${eventId}/join/`, {
+          userId: sessionStorage.getItem("userId"),
+        });
         router.push(AppRoutes.MY_EVENTS);
         console.log('Event created successfully');
     } catch (error) {
@@ -130,8 +134,30 @@ const handleRemoveTag = (tag: string) => {
                       id="event_date"
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
-                      value={field.value.toISOString().slice(0, 16)} // Convert Date to string
-                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                      value={(() => {
+                        const valueDate = new Date(field.value);
+                        console.log("Data prima della conversione:", valueDate);
+                      
+                        const formattedDate = valueDate.toLocaleString("sv-SE", {
+                          timeZone: "Europe/Rome",
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        });
+                      
+                        // Convertire in formato `datetime-local`
+                        const formattedForInput = formattedDate.replace(" ", "T");
+                        console.log("Data formattata per datetime-local:", formattedForInput);
+                      
+                        return formattedForInput;
+                      })()}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value ? new Date(e.target.value) : null); 
+                      }}
                       required
                       />
                       <p className="text-red-500">{error?.message}</p>
@@ -167,7 +193,26 @@ const handleRemoveTag = (tag: string) => {
                       id="event_date"
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
-                      value={field.value.toISOString().slice(0, 16)} // Convert Date to string
+                      value={(() => {
+                        const valueDate = new Date(field.value);
+                        console.log("Data prima della conversione:", valueDate);
+                      
+                        const formattedDate = valueDate.toLocaleString("sv-SE", {
+                          timeZone: "Europe/Rome",
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        });
+                      
+                        // Convertire in formato `datetime-local`
+                        const formattedForInput = formattedDate.replace(" ", "T");
+                        console.log("Data formattata per datetime-local:", formattedForInput);
+                      
+                        return formattedForInput;
+                      })()} // Convert Date to string
                       onChange={(e) => field.onChange(new Date(e.target.value))}
                       required
                       />

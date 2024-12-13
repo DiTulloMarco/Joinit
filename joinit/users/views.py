@@ -138,7 +138,7 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     
     @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
     def user_events(self, request):
-        user_events = request.user.events.filter(cancelled=False).order_by('-event_date')
+        user_events = request.user.events.order_by('-event_date')
 
         page = self.paginate_queryset(user_events)
         if page is not None:

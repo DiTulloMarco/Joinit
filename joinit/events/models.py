@@ -67,14 +67,16 @@ class Event(models.Model):
             hasher.update(chunk)
         return hasher.hexdigest()
 
-    def save(self, *args, **kwargs):
-        min_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        if self.participation_deadline and self.participation_deadline < min_date:
-            raise ValueError('Deadline ' + str(self.participation_deadline) + ' must be in the future or today: ' + str(min_date))
-        if self.participation_deadline and self.event_date and self.participation_deadline > self.event_date:
-            raise ValueError('Participation deadline must be before event date')
-        
+    def save(self, *args, validate_dates=True, **kwargs):
+        if validate_dates and not self.cancelled:
+            min_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+            if self.participation_deadline and self.participation_deadline < min_date:
+                raise ValueError(
+                    f"Deadline {self.participation_deadline} must be in the future or today: {min_date}"
+                )
+            if self.participation_deadline and self.event_date and self.participation_deadline > self.event_date:
+                raise ValueError("Participation deadline must be before event date")
         if self.pk:
             previous = Event.objects.filter(pk=self.pk).first()
             if self.cover_image and (not previous or self.cover_image != previous.cover_image):
@@ -93,8 +95,9 @@ class Event(models.Model):
             if previous and previous.cover_image and self.cover_image != previous.cover_image:
                 if previous.cover_image and Path(previous.cover_image.path).exists():
                     previous.cover_image.delete(save=False)
-        
+
         super().save(*args, **kwargs)
+
 
     def __str__(self):
         return self.name + ' - ' + self.place + ' - ' + str(self.event_date)

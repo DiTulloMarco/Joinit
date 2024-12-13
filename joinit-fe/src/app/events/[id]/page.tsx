@@ -267,7 +267,7 @@ export default function EventPage(queryString: any) {
           } else {
             formattedTags.forEach((tag) => formData.append('tags', tag));
           }
-        } else if (key === 'participation_deadline' && value === event.participation_deadline) {
+        } else if (key === 'event_date' || key === 'participation_deadline') {
           return;
         } else if (key === 'cover_image' && value instanceof File) {
           formData.append(key, value);
@@ -295,17 +295,31 @@ export default function EventPage(queryString: any) {
   
 
   const handleEventDeletion = async () => {
-    try {
-      const response = await axios.put(`${url}/events/${eventId}/cancel_event/`, {
-        userId: parseInt(sessionStorage.getItem('userId')!)
-      });
+    const eventId = event.id; // Assicurati che il valore sia corretto
+    const userId = parseInt(sessionStorage.getItem('userId')!);
 
-      console.log('Event deletion was successful');
-      router.push(AppRoutes.MY_EVENTS);
-    } catch (err) {
-      console.error('Evet deletion failed: ' + err);
+    console.log(`Invio richiesta per cancellare evento con ID: ${eventId}`);
+    const payload = { userId };
+    console.log('Payload:', payload);
+
+    try {
+        const response = await axios.put(`${url}/events/${eventId}/cancel_event/`, payload, {
+            headers: {
+                Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+            },
+        });
+        console.log('Risposta cancellazione evento:', response.data);
+
+        router.push(AppRoutes.MY_EVENTS);
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error('Errore Axios:', error.response?.data || error.message);
+        } else {
+            console.error('Errore sconosciuto:', error);
+        }
     }
-  }
+};
+
 
   return (
     <main className="flex-1 p-8">
