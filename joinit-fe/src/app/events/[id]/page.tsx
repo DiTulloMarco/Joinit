@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
-import ConfirmEventDeletionModal from '@/components/ConfirmEventDeletionModal';
 import { AppRoutes } from '@/enums/AppRoutes';
 import axios from 'axios';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
