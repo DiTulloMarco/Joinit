@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
+import ConfirmEventDeletionModal from '@/components/ConfirmEventDeletionModal';
 import { AppRoutes } from '@/enums/AppRoutes';
 import axios from 'axios';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
@@ -51,6 +52,9 @@ export default function EventPage(queryString: any) {
   const { control, handleSubmit, formState: { errors } } = useForm<RatingFormType>();
   const [participants, setParticipants] = useState<string[]>([]);
 
+  const [confirmationModal, setConfirmationModal] = useState<boolean>(false);
+  const [triedEventDeletion, SetTriedEventDeletion] = useState<boolean>(false);
+
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [mapHeight] = useState(400);
@@ -94,8 +98,16 @@ export default function EventPage(queryString: any) {
     }
   };
   
-  
-  
+  useEffect(() => {
+    if (confirmationModal) {
+      const interval = setInterval
+      (
+        () => {clearInterval(interval); setConfirmationModal(false)},
+        7000
+      );
+    }
+  }, [confirmationModal]);
+
   const setDefaultMap = () => {
     const defaultCoordinates = { lat: 41.9029083, lng: 12.5145139 }; // Sapienza default location
     if (mapInstanceRef.current) {
@@ -516,17 +528,29 @@ export default function EventPage(queryString: any) {
         </div>
       )}
   
-      {!event.cancelled && isCreator && (
-        <div className="w-1/2 min-w-50 mt-12">
-          <button
-            onClick={handleEventDeletion}
-            className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm"
-          >
-            Cancella l'evento
-            <span className="material-icons text-[#ea3333]">delete</span>
-          </button>
-        </div>
-      )}
+      {!event.cancelled && isCreator && !triedEventDeletion ?
+        (
+          <div className="w-1/2 min-w-50 mt-12">
+            {!confirmationModal ? (
+              <button
+                onClick={() => setConfirmationModal(true)}
+                className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm"
+              >
+                <b>Cancella l'evento</b><span className="material-icons text-[#ea3333]">delete</span>
+              </button>
+            ) : (
+              <button
+                onClick={ () => {handleEventDeletion(); setConfirmationModal(false); SetTriedEventDeletion(true);} }
+                className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-md"
+              >
+                <b>Confermi? </b>
+              </button>
+            )}
+          </div>
+        ) : (
+          <></>
+        )
+      }
   
       {isCreator && (
         <div className="mt-4">
