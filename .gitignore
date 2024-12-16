@@ -1,5 +1,6 @@
-
+/.idea/
 /.venv
 /joinit/*/__pycache__
 /joinit/*/migrations/__pycache__
 /emails/
+/joinit/media/

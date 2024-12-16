@@ -24,17 +24,13 @@ from django.conf.urls.static import static
 
 base_url = "api/v1/"
 
-from events.views import EventViewSet   # needs to be changed so that event urls are in a separate file (in events/urls.py)
-router = routers.SimpleRouter()
-router.register(r'api/v1/events', EventViewSet, basename="events")
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('schema/', get_schema_view(title="Joinit API"), name="openapi-schema"),
     path('', TemplateView.as_view(template_name="docs.html", extra_context={"schema_url": 'openapi-schema'}), name="swagger-ui"),
     path(base_url + 'users/', include('users.urls')),
     path(base_url, include('events.urls')),
-] + router.urls
+]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

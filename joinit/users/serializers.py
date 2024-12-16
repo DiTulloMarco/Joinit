@@ -1,7 +1,17 @@
 from rest_framework.serializers import ModelSerializer, StringRelatedField
+from rest_framework import serializers 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import AccessToken
 from .models import CustomUser
+
+class AuthSerializer(ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'password', 'first_name', 'last_name']
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
 
 class UserSerializer(ModelSerializer):
     class Meta:
@@ -78,5 +88,3 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
                 data.update({'user': None})
 
         return data
-
-

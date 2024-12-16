@@ -4,6 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.schemas.openapi import AutoSchema
+from rest_framework.exceptions import PermissionDenied
 
 from django.db.models import Q
 from django.utils import timezone

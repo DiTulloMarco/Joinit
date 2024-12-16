@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
@@ -47,13 +47,13 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
             return serializers.SetNewPasswordSerializer
         return serializers.UserEditSerializer
 
-    @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['POST'], permission_classes=[AllowAny], serializer_class=serializers.AuthSerializer)
     def register(self, request):
-        usr_srlz = serializers.UserSerializer(data=request.data)
+        usr_srlz = serializers.AuthSerializer(data=request.data)
         usr_srlz.is_valid(raise_exception=True)
         user = usr_srlz.save()
         token = RefreshToken.for_user(user)
-        return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': usr_srlz.data})
+        return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': usr_srlz.data}, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['GET'])
     def profile(self, request):
