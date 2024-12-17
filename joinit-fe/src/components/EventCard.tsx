@@ -195,8 +195,13 @@ export default function EventCard(props: EventCardProps) {
         fontWeight: "bold",
         letterSpacing: "2px",
         textAlign: "center",
-        marginHorizontal: "auto",
         marginBottom: "60px"
+      },
+      stdText : {
+        fontSize: "20px",
+        fontFamily: "Helvetica",
+        letterSpacing: "1px",
+        textAlign: "justify",
       },
       description : {
         fontSize: "20px",
@@ -206,6 +211,12 @@ export default function EventCard(props: EventCardProps) {
       },
       datetime : {
         fontSize: "20px",
+        fontFamily: "Helvetica-Bold",
+        fontWeight: "bold",
+        letterSpacing: "1px",
+      },
+      price : {
+        fontSize: "22px",
         fontFamily: "Helvetica-Bold",
         fontWeight: "bold",
         letterSpacing: "1px",
@@ -226,10 +237,30 @@ export default function EventCard(props: EventCardProps) {
         fontFamily: "Helvetica-Bold",
         fontWeight: "bold",
         letterSpacing: "1px",
-      }
+      },
+      privateWarning : {
+        fontSize: "14px",
+        fontFamily: "Courier-Oblique",
+        letterSpacing: "3px",
+        textAlign: "center",
+        fontWeight: "bold",
+      },
     });
 
-    const eventPDF = (props: EventCardProps) => (
+    const getUserFullName = async (userId: number) => {
+      const response = await axios.get(`${url}/users/${userId}/`);
+      //console.log("Risposta alla richiesta di dati di un utente conoscendo lo userId: " + response.status);
+      
+      if (response.status != 200){
+        return null;
+      }
+      else{
+        const userData = response.data;
+        return userData.first_name.toString() + " " + userData.last_name.toString();
+      }
+    };
+
+    const eventPDF = async (props: EventCardProps) => (
       <Document>
         <Page style={PDFStyle.page} size="A4">
           <View style={PDFStyle.header}>
@@ -240,27 +271,69 @@ export default function EventCard(props: EventCardProps) {
             <Text style={PDFStyle.title}>{props.event.name.toString()}</Text>
 
             <Text style={PDFStyle.description} break>{props.event.description.toString()}</Text>
-
           </View>
+
           <View style={PDFStyle.section}>
             <View style={PDFStyle.sameLine}>
-              <Text style={PDFStyle.description}>Inizio dell'evento: </Text>
+              <Text style={PDFStyle.stdText}>Ingresso: </Text>
+              { (props.event.price == 0) ? 
+                (
+                  <Text style={PDFStyle.price}>gratuito</Text>
+                ) : (
+                  <Text style={PDFStyle.price}>&#8364;{props.event.price.toString().replace(/\./g, ',')}</Text>
+                )
+              }
+              { (props.event.max_participants == null || props.event.max_participants == 0) ?
+                ( 
+                  <Text style={PDFStyle.stdText}>&nbsp;, nessun limite al numero di partecipanti</Text>
+                ) : (
+                  <Text style={PDFStyle.stdText}>&nbsp;, partecipanti massimi: {props.event.max_participants.toString()}</Text>
+                )
+              }
+            </View>
+            <View style={PDFStyle.sameLine}>
+              <Text style={PDFStyle.stdText}>Data e ora ultime per iscriverti: </Text>
               <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getDate() + "/" + (new Date(props.event.event_date).getMonth()+1).toString().padStart(2, "0") + "/" + (new Date(props.event.event_date).getFullYear())}</Text>
-              <Text style={PDFStyle.description}> alle ore </Text>
+              <Text style={PDFStyle.stdText}> alle ore </Text>
+              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getHours().toString().padStart(2, "0") + ":" + new Date(props.event.event_date).getMinutes().toString().padStart(2, "0")}</Text>
+            </View>
+          </View>
+
+          <View style={PDFStyle.section}>
+            <View style={PDFStyle.sameLine}>
+              <Text style={PDFStyle.stdText}>Inizio dell'evento: </Text>
+              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getDate() + "/" + (new Date(props.event.event_date).getMonth()+1).toString().padStart(2, "0") + "/" + (new Date(props.event.event_date).getFullYear())}</Text>
+              <Text style={PDFStyle.stdText}> alle ore </Text>
               <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getHours().toString().padStart(2, "0") + ":" + new Date(props.event.event_date).getMinutes().toString().padStart(2, "0")}</Text>
             </View>
 
+
             <View style={PDFStyle.sameLine}>
-              <Text style={PDFStyle.description}>Indirizzo: </Text>
+              <Text style={PDFStyle.stdText}>Indirizzo: </Text>
               <Text style={PDFStyle.location}>{props.event.place.toString()}</Text>
             </View>
           </View>
+          
+          <View style={PDFStyle.section}>
+            <View style={PDFStyle.sameLine}>
+              <Text style={PDFStyle.stdText}>Organizzatore: </Text>
+              <Text style={PDFStyle.organiser}>
+                {await getUserFullName(props.event.created_by) == null ? ("Impossibile ottenere il nome utente") : (await getUserFullName(props.event.created_by))}
+              </Text>
+            </View>
+          </View>
+
+          { props.event.is_private &&
+            <View style={PDFStyle.section}>
+              <View style={PDFStyle.privateWarning}><b>Questo evento è privato.</b></View>
+            </View>
+          }
         </Page>
 
       </Document>
     );
 
-    const pdfFile = await pdf(eventPDF(props)).toBlob();
+    const pdfFile = await pdf(await eventPDF(props)).toBlob();
 
     const hiddenLink = document.createElement("a");
     hiddenLink.href = URL.createObjectURL(pdfFile);
@@ -278,7 +351,7 @@ export default function EventCard(props: EventCardProps) {
       status: 'success',
       duration: 5000,
       isClosable: true,
-    })
+    });
   }
 
   return (
