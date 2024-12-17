@@ -16,7 +16,6 @@ export default function CreateEventPage() {
   const { control, handleSubmit, formState: { errors } } = useForm<CreateEventFormType>()
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<string[]>([]);
-  const [currentTag, setCurrentTag] = useState<string>(""); // Per memorizzare l'input corrente
   const router = useRouter();
 
   const fetchCategories = async () => {
@@ -52,19 +51,6 @@ export default function CreateEventPage() {
         console.error(error);
         console.error('Event creation failed');
     }
-};
-
-
-  
-
-const handleAddTag = (tag: string) => {
-  const trimmedTag = tag.trim();
-  if (!trimmedTag || tags.includes(trimmedTag)) return;
-  setTags((prevTags) => {
-      const updatedTags = [...prevTags, trimmedTag];
-      console.log("Tags aggiornati:", updatedTags);
-      return updatedTags;
-  });
 };
 
 const handleRemoveTag = (tag: string) => {
@@ -135,8 +121,7 @@ const handleRemoveTag = (tag: string) => {
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
                       value={(() => {
-                        const valueDate = new Date(field.value);
-                        console.log("Data prima della conversione:", valueDate);
+                        const valueDate = new Date(field.value);                     
                       
                         const formattedDate = valueDate.toLocaleString("sv-SE", {
                           timeZone: "Europe/Rome",
@@ -147,11 +132,8 @@ const handleRemoveTag = (tag: string) => {
                           minute: "2-digit",
                           hour12: false,
                         });
-                      
-                        // Convertire in formato `datetime-local`
+
                         const formattedForInput = formattedDate.replace(" ", "T");
-                        console.log("Data formattata per datetime-local:", formattedForInput);
-                      
                         return formattedForInput;
                       })()}
                       onChange={(e) => {
@@ -195,7 +177,6 @@ const handleRemoveTag = (tag: string) => {
                       {...field} 
                       value={(() => {
                         const valueDate = new Date(field.value);
-                        console.log("Data prima della conversione:", valueDate);
                       
                         const formattedDate = valueDate.toLocaleString("sv-SE", {
                           timeZone: "Europe/Rome",
@@ -207,12 +188,9 @@ const handleRemoveTag = (tag: string) => {
                           hour12: false,
                         });
                       
-                        // Convertire in formato `datetime-local`
                         const formattedForInput = formattedDate.replace(" ", "T");
-                        console.log("Data formattata per datetime-local:", formattedForInput);
-                      
                         return formattedForInput;
-                      })()} // Convert Date to string
+                      })()}
                       onChange={(e) => field.onChange(new Date(e.target.value))}
                       required
                       />

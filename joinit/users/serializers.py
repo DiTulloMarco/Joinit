@@ -43,7 +43,7 @@ class UserEditSerializer(ModelSerializer):
 class UserBaseInfoSerializer(ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name', 'birth_date','city','nation', 'profile_picture']
+        fields = ['first_name', 'last_name', 'birth_date','city','nation', 'profile_picture', 'email']
 
 class SendPasswordRecoveryInfoSerializer(ModelSerializer):
     class Meta:

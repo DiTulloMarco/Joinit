@@ -91,7 +91,7 @@ export default function EventPage(queryString: any) {
           axios.get(`${url}/users/${userId}/`).then((res) => res.data)
         )
       );
-      setParticipants(responses.map((user) => `${user.first_name} ${user.last_name}`));
+      setParticipants(responses.map((user) => `${user.first_name} ${user.last_name} ${user.email}`));
     } catch (error) {
       console.error('Error fetching participants:', error);
     }
@@ -306,7 +306,7 @@ export default function EventPage(queryString: any) {
   
 
   const handleEventDeletion = async () => {
-    const eventId = event.id; // Assicurati che il valore sia corretto
+    const eventId = event.id; 
     const userId = parseInt(sessionStorage.getItem('userId')!);
 
     console.log(`Invio richiesta per cancellare evento con ID: ${eventId}`);
@@ -408,7 +408,8 @@ export default function EventPage(queryString: any) {
                   href={`http://localhost:3000/events/profile/${userId}`}
                   className="text-blue-500 hover:underline"
                 >
-                  {participants[index] || `Partecipante ${userId}`}
+                  {participants[index]?.split(" ").slice(0, -1).join(" ") || `Partecipante ${userId}`}
+                  <span className="text-gray-500">(Email: {participants[index]?.split(" ").slice(-1)[0]})</span>
                 </a>
               </li>
             ))}

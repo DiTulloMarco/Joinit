@@ -234,19 +234,33 @@ class EventViewSet(ModelViewSet):
     
     @action(detail=False, methods=['GET'], url_path='search')
     def search_events(self, request):
-        q = request.query_params.get('q', '').strip()
-    
+        z = request.query_params
         filters = Q(is_private=False, cancelled=False)
 
-        if q:
+        if 'q' in z and z['q'].strip():
+            q = z['q'].strip()
             category_mapping = {label.lower(): value for value, label in Event.EventType.choices}
-            category_value = category_mapping.get(q.lower()) 
-
+            category_value = category_mapping.get(q.lower())
+            tag_list = [tag.strip() for tag in q.split(',')]
             filters &= (
                 Q(name__icontains=q) |
-                Q(tags__overlap=[q]) |
+                Q(tags__overlap=tag_list) |
                 (Q(category=category_value) if category_value is not None else Q())
             )
+
+        if 'place' in request.query_params:
+            filters &= Q(place__icontains=request.query_params['place'])
+        if 'name' in z and z['name'].strip():
+            filters &= Q(name__icontains=z['name'].strip())
+        if 'category' in z and z['category'].isdigit():
+            filters &= Q(category=int(z['category']))
+        if 'max_price' in z and z['max_price'].replace('.', '', 1).isdigit():
+            filters &= Q(price__lte=float(z['max_price']))
+        if 'max_participants' in z and z['max_participants'].isdigit():
+            filters &= Q(max_participants__lte=int(z['max_participants']))
+        if 'tags' in z and z['tags'].strip():
+            tag_list = [tag.strip() for tag in z['tags'].split(',')]
+            filters &= Q(tags__overlap=tag_list)
 
         events = Event.objects.filter(filters).order_by('-event_date')
 

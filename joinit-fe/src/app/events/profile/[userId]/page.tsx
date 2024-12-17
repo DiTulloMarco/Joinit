@@ -13,98 +13,81 @@ export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
   const userId = Array.isArray(params.userId) ? params.userId[0] : params.userId;
-  const [userData, setUserData] = useState<User>({} as User);
+  const [userData, setUserData] = useState<User | null>(null);
   const [userEvents, setUserEvents] = useState<MyEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [userNotFound, setUserNotFound] = useState(false);
-  const [timer, setTimer] = useState(5); 
 
   const authenticatedUserId = parseInt(sessionStorage.getItem('userId')!, 10);
 
   useEffect(() => {
     if (userId && parseInt(userId) === authenticatedUserId) {
-      router.push('/events/profile');
+      router.replace('/events/profile');
     }
   }, [userId, authenticatedUserId, router]);
 
-  async function fetchUserProfile() {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(`${url}/users/${userId}/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-        },
-      });
-      setUserData(response.data);
-      setUserNotFound(false); 
-    } catch (error) {
-      console.error('Errore nel recupero del profilo utente:', error);
+      const [userResponse, eventsResponse] = await Promise.all([
+        axios.get(`${url}/users/${userId}/`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+          },
+        }),
+        axios.get(`${url}/users/${userId}/get_user_events/`, {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+          },
+        }),
+      ]);
 
-      if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
-        setUserNotFound(true); 
+      setUserData(userResponse.data);
+
+      const filteredEvents = eventsResponse.data.results.filter((event: MyEvent) => {
+        const isParticipant = event.joined_by.includes(authenticatedUserId);
+        return (!event.is_private || isParticipant) && !event.cancelled;
+      });
+
+      setUserEvents(filteredEvents);
+      setUserNotFound(false);
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        setUserNotFound(true);
       } else {
         console.error('Errore sconosciuto:', error);
       }
+    } finally {
+      setLoading(false);
     }
-  }
-
-  async function fetchUserEvents() {
-    try {
-      const response = await axios.get(`${url}/users/${userId}/get_user_events/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-        },
-      });
-
-      const filteredEvents = response.data.results.filter((event: MyEvent) => {
-        const isParticipant = event.joined_by.includes(authenticatedUserId);
-        return (!event.is_private || isParticipant) && !event.cancelled;
-      })
-
-      setUserEvents(filteredEvents);
-    } catch (error) {
-      console.error('Errore nel recupero degli eventi:', error);
-    }
-  }
+  };
 
   useEffect(() => {
-    if (!userId) return;
-    setLoading(true);
-    fetchUserProfile();
-    fetchUserEvents();
-    setLoading(false);
+    if (userId) fetchData();
   }, [userId]);
 
-  
-  useEffect(() => {
-    if (userNotFound) {
-      const interval = setInterval(() => {
-        setTimer((prevTimer) => {
-          if (prevTimer <= 1) {
-            clearInterval(interval); 
-            router.push('/events/profile'); 
-            return 0;
-          }
-          return prevTimer - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [userNotFound, router]);
-
   if (loading) {
-    return <p>Caricamento in corso...</p>;
+    return (
+      <main className="flex-1 p-8">
+        <div className="flex justify-center items-center h-full">
+          <div className="loader"></div>
+        </div>
+      </main>
+    );
   }
 
   if (userNotFound) {
     return (
-      <main className="flex-1 p-8">
-        <p className="text-red-600 text-xl font-bold">Questi non sono i droidi che state cercando.</p>
+      <main className="flex-1 p-8 text-center">
         <p className="text-red-600 text-xl font-bold">
-          Tornate indietro, verrete reindirizzati alla vostra base tra <span className="font-bold">{timer}</span>...
+          Droide non trovato. Questi non sono i droidi che state cercando.
         </p>
+        <button
+          onClick={() => router.push('/events/profile')}
+          className="primary-button mt-4"
+        >
+          Vai al tuo profilo
+        </button>
       </main>
     );
   }
@@ -114,24 +97,24 @@ export default function UserProfilePage() {
       {userData && (
         <div className="flex items-center justify-start mb-8">
           <Image
-            src={userData.profile_picture ? userData.profile_picture : "https://via.placeholder.com/50"}
+            src={userData.profile_picture || 'https://via.placeholder.com/160'}
             width={160}
             height={160}
             alt="Profile"
-            className="w-40 h-40 rounded-lg overflow-hidden border-4 border-gray-300 shadow-lg mr-6 flex items-center justify-center"
+            className="w-40 h-40 rounded-lg border-4 border-gray-300 shadow-lg mr-6"
           />
           <div>
-            <h1 className="text-4xl font-bold">{userData.first_name} {userData.last_name}</h1>
+          <h1 className="text-4xl font-bold">{userData.first_name} {userData.last_name}</h1>
             <p className="text-gray-600">
               {userData.birth_date &&
-                Math.floor((new Date().getTime() - new Date(userData.birth_date).getTime()) / 31557600000)
+               Math.floor((new Date().getTime() - new Date(userData.birth_date).getTime()) / 31557600000)
               } anni - {userData.city}, {userData.nation}
             </p>
           </div>
         </div>
       )}
 
-      <h2 className="text-2xl font-bold mb-4">Eventi Creati da {userData.first_name}</h2>
+      <h2 className="text-2xl font-bold mb-4">Eventi Creati da {userData?.first_name}</h2>
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {userEvents.map(event => (
           <EventCard
