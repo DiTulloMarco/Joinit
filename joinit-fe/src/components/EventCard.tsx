@@ -10,6 +10,7 @@ const url = process.env.API_URL;
 type EventCardProps = {
   event: MyEvent;
   canJoin: boolean;
+  canInteract: boolean;
 };
 
 export default function EventCard(props: EventCardProps) {
@@ -394,13 +395,13 @@ export default function EventCard(props: EventCardProps) {
           - {props.event.place}
         </p>
         <div className='flex space-x-10 items-center'>
-        { canJoin &&
+        { canJoin && props.canInteract &&
           <button onClick={handleJoin} className="primary-button mt-2 min-w-28 !w-1/3">
             Partecipa
           </button>
         }
 
-        { joined &&
+        { joined && props.canInteract &&
           <button onClick={handleCancelJoin} className="primary-button mt-2 min-w-28 opacity-60 !w-1/3">
             Annulla partecipazione
           </button>
@@ -417,7 +418,7 @@ export default function EventCard(props: EventCardProps) {
           </>
         }
 
-        { !window.location.pathname.includes(AppRoutes.EVENT + props.event.id) &&
+        { !window.location.pathname.includes(AppRoutes.EVENT + props.event.id) && props.canInteract &&
           <a href={AppRoutes.EVENT + props.event.id} className='mt-1 opacity-70 hover:opacity-90'>vedi dettagli →</a>
         }
         </div>

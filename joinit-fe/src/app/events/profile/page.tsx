@@ -138,6 +138,7 @@ export default function ProfilePage() {
                     key={event.id}
                     event={event}
                     canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))}
+                    canInteract={true}
                   />
                 ))}
               </section>
@@ -152,10 +153,8 @@ export default function ProfilePage() {
                   <EventCard
                     key={event.id}
                     event={event}
-
-                    /// TODO Da rivedere questo parametro sotto, precedentemente questo:
-                    /// !event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))
-                    canJoin={false}
+                    canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))}
+                    canInteract={!event.cancelled || event.created_by == sessionStorage.getItem('userId')!}
                   />
                 ))}
               </section>

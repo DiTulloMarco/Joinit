@@ -35,6 +35,7 @@ export default function EventsPage() {
       <EventCard 
         event={featuredEvent}
         canJoin={!featuredEvent.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+        canInteract={true}
       />
         }
       <h2 className="text-2xl font-bold mb-4 flex items-center pt-10">
@@ -46,7 +47,8 @@ export default function EventsPage() {
           <EventCard 
           key={event.id}
           event={event}
-          canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))} 
+          canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+          canInteract={true}
         />
         ))}
         {otherEvents.length === 0 && <p>Nessun altro evento per ora ;(</p>}

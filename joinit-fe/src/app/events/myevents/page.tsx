@@ -47,6 +47,7 @@ export default function MyEventsPage() {
               key={event.id}
               event={event}
               canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+              canInteract={true}
             />
           ))}
         </section>

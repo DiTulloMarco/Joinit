@@ -60,6 +60,7 @@ export default function FavoriteEventsPage() {
                 key={event.id}
                 event={event}
                 canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+                canInteract={!event.cancelled || event.created_by == sessionStorage.getItem('userId')!}
               />
             ))}
         </section>
