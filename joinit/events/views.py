@@ -179,9 +179,6 @@ class EventViewSet(ModelViewSet):
         serializer.save(user=user, event=event)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-
-
     @action(detail=True, methods=['GET'], permission_classes=[AllowAny])
     def ratings(self, request, pk=None):
         event = self.get_object()
@@ -341,17 +338,3 @@ class EventViewSet(ModelViewSet):
                 {'error': 'Unable to cancel the event.', 'details': str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
         )
-
-
-    """
-    def list(self, request):
-        pass
-
-    def create(self, request):
-        pass
-
-    def retrieve(self, request, pk=None):
-        # return a particular event (specified by pk)
-        pass
-
-    """

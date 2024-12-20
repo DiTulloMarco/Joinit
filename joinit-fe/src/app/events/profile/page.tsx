@@ -13,6 +13,8 @@ const url = process.env.API_URL;
 export default function ProfilePage() {
   const [userData, setUserData] = useState<User>({} as User);
   const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
+  const [joinedEvents, setJoinedEvents] = useState<MyEvent[]>([]);
+  const [showMyEvents, setShowMyEvents] = useState<boolean>(true);
   const [modal, setModal] = useState<boolean>(false);
   const { control, handleSubmit, setValue, formState: { errors } } = useForm<EditProfileFormType>();
 
@@ -48,9 +50,26 @@ export default function ProfilePage() {
     }
   }
 
+  // Ottiene tutti gli eventi a cui l'utente ha partecipato, inclusi quelli privati o che sono stati cancellati
+  async function fetchJoinedEvents() { 
+    try{
+      const response = await axios.get(`${url}/users/auth/joined_events_past/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+      });
+      setJoinedEvents(response.data.results);
+    } catch(error) {
+      console.error('Failed to fetch the events joined by the user', error);
+    }
+  }
+
+  // Viene eseguito solo al caricamento della pagina
   useEffect(() => {
     fetchUser();
     fetchEvents();
+    fetchJoinedEvents();
   }, []);
 
   const onSubmit: SubmitHandler<EditProfileFormType> = async (data) => {
@@ -106,17 +125,43 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold mb-4">I Tuoi Eventi</h2>
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {myEvents.map(event => (
-              <EventCard
-                key={event.id}
-                event={event}
-                canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))}
-              />
-            ))}
-          </section>
+          {/* TODO deve essere mostrata solo una sezione alla volta tra "I tuoi eventi" e "Storico eventi" */}
 
+          { showMyEvents ? (
+            <>
+              <h2 className="text-2xl mb-4">
+                <b>I Tuoi Eventi</b>&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;<button className="hover:underline" onClick={() => setShowMyEvents(false)}>Storico Eventi</button>
+              </h2>
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {myEvents.map(event => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))}
+                  />
+                ))}
+              </section>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl mb-4">
+                <button className="hover:underline" onClick={() => setShowMyEvents(true)}>I Tuoi Eventi</button>&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<b>Storico Eventi</b>
+              </h2>
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {joinedEvents.map(event => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+
+                    /// TODO Da rivedere questo parametro sotto, precedentemente questo:
+                    /// !event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))
+                    canJoin={false}
+                  />
+                ))}
+              </section>
+            </>
+          )}
+          
           {modal && (
             <div className="fixed inset-0 flex items-center bg-gray-900 bg-opacity-50 justify-center z-40">
               <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg p-6 px-10 w-1/4">

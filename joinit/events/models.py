@@ -58,7 +58,7 @@ class Event(models.Model):
     is_private = models.BooleanField(default=False, null=False, blank=True)
     cancelled = models.BooleanField(default=False, null=False, blank=True)
 
-    joined_by = models.ManyToManyField(CustomUser)
+    joined_by = models.ManyToManyField(CustomUser, related_name='joined_events')
 
     def _calculate_file_hash(self, file):
         """Calcola l'hash MD5 di un file."""
