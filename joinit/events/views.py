@@ -7,7 +7,6 @@ from rest_framework.schemas.openapi import AutoSchema
 from rest_framework.exceptions import PermissionDenied
 
 from django.db.models import Q
-from django.utils import timezone
 from users.models import CustomUser
 from .models import Event, Rating, Favorite
 from .serializers import EventSerializer, RatingSerializer, FavoriteSerializer

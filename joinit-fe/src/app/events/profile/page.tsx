@@ -125,8 +125,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* TODO deve essere mostrata solo una sezione alla volta tra "I tuoi eventi" e "Storico eventi" */}
-
           { showMyEvents ? (
             <>
               <h2 className="text-2xl mb-4">
