@@ -232,7 +232,7 @@ const handleRemoveTag = (tag: string) => {
                     <input
                       type='text'
                       id="place"
-                      placeholder="Inserisci il luogo dell'evento"
+                      placeholder="Inserisci il luogo dell'evento, specifica la citta con il nome completo per un migliore posizionamento"
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
                       required

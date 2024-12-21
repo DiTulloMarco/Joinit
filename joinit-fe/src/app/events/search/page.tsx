@@ -14,6 +14,7 @@ export default function SearchPage() {
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false); 
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [lastSearchParams, setLastSearchParams] = useState({});
 const [totalPages, setTotalPages] = useState<number>(1);
   const [filters, setFilters] = useState({
     name: '',
@@ -35,9 +36,10 @@ const [totalPages, setTotalPages] = useState<number>(1);
 
   const fetchEvents = async (endpoint: string, params = {}) => {
     setIsLoading(true);
+    const userId = sessionStorage.getItem('userId');
     try {
       const response = await axios.get(endpoint, {
-        params: { ...params, page: currentPage },
+        params: { ...params, page: currentPage ,userId: userId},
       });
       setSearchResults(response.data.results || []);
       setTotalPages(Math.ceil(response.data.count / 10));
@@ -56,8 +58,9 @@ const [totalPages, setTotalPages] = useState<number>(1);
   }, []);
 
   useEffect(() => {
-    fetchEvents(`${url}/events/list_public/`);
-  }, [currentPage]);
+    const params = { ...lastSearchParams, page: currentPage };
+    fetchEvents(`${url}/events/search/`, params);
+}, [currentPage]);
 
   const goToPage = (page: number) => {
     if (page > 0 && page <= totalPages) {
@@ -66,7 +69,10 @@ const [totalPages, setTotalPages] = useState<number>(1);
   };
 
   const fetchSearchResults = () => {
-    fetchEvents(`${url}/events/search/`, { q: searchQuery, page: currentPage });
+    const params = { q: searchQuery, page: 1 };
+    setCurrentPage(1);
+    setLastSearchParams(params);
+    fetchEvents(`${url}/events/search/`, params);
   };
 
   const fetchAdvancedSearchResults = () => {
@@ -74,7 +80,11 @@ const [totalPages, setTotalPages] = useState<number>(1);
     Object.entries(filters).forEach(([key, value]) => {
       if (value) queryParams.append(key, value);
     });
-    fetchEvents(`${url}/events/search/?${queryParams.toString(), { page: currentPage }}`);
+    const params = Object.fromEntries(queryParams);
+    params.page = String(1);
+    setCurrentPage(1);
+    setLastSearchParams(params);
+    fetchEvents(`${url}/events/search/`, params);
     setShowAdvancedFilters(false);
   };
 

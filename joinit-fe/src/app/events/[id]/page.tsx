@@ -579,12 +579,17 @@ export default function EventPage(queryString: any) {
               name="price"
               control={eventControl}
               defaultValue={0}
+              rules={{
+                validate: (value) => value >= 0 || "Il prezzo deve essere maggiore di zero",
+              }}
               render={({ field }) => (
                 <input
                   {...field}
                   type="number"
                   placeholder="Prezzo"
                   className="primary-input"
+                  step="0.01"
+                  min="0.00"
                 />
               )}
             />

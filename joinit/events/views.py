@@ -90,16 +90,18 @@ class EventViewSet(ModelViewSet):
     
     @action(detail=False, methods=['GET'])
     def list_public(self, request):
-        try:
-            events = Event.objects.filter(is_private=False, cancelled=False).order_by('-event_date')
-        except:
-            raise Exception()
+        user_id = request.query_params.get('userId')
         
+        try:
+            events = Event.objects.filter(Q(is_private=False, cancelled=False) |Q(is_private=True, joined_by__id=user_id)).order_by('-event_date')
+
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         page = self.paginate_queryset(events)
+        
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
         serializer = self.get_serializer(events, many=True)
         return Response(serializer.data)
 
@@ -108,7 +110,7 @@ class EventViewSet(ModelViewSet):
         event = self.get_object()
         try:
             user = CustomUser.objects.get(id=request.data['userId'])
-            if not user.can_join or event.is_private:
+            if not user.can_join:
                 return Response({'detail': 'You are not allowed to join events.'}, status=status.HTTP_403_FORBIDDEN)
             
             if event.participation_deadline < timezone.now():
@@ -230,12 +232,11 @@ class EventViewSet(ModelViewSet):
 
         except Exception as e:
             return Response({'detail': f'An error occurred: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
-
     
     @action(detail=False, methods=['GET'], url_path='search')
     def search_events(self, request):
         z = request.query_params
-        filters = Q(is_private=False, cancelled=False)
+        filters = Q(cancelled=False)
 
         if 'q' in z and z['q'].strip():
             q = z['q'].strip()
@@ -248,8 +249,8 @@ class EventViewSet(ModelViewSet):
                 (Q(category=category_value) if category_value is not None else Q())
             )
 
-        if 'place' in request.query_params:
-            filters &= Q(place__icontains=request.query_params['place'])
+        if 'place' in z and z['place'].strip():
+            filters &= Q(place__icontains=z['place'])
         if 'name' in z and z['name'].strip():
             filters &= Q(name__icontains=z['name'].strip())
         if 'category' in z and z['category'].isdigit():
@@ -262,7 +263,19 @@ class EventViewSet(ModelViewSet):
             tag_list = [tag.strip() for tag in z['tags'].split(',')]
             filters &= Q(tags__overlap=tag_list)
 
+        user_id = request.query_params.get('userId')  
+        if user_id:
+            event_filters = Q(
+                Q(is_private=False) |
+                Q(is_private=True, joined_by__id=user_id) |
+                Q(is_private=True, created_by__id=user_id)
+            )
+            filters &= event_filters
+        else:
+            filters &= Q(is_private=False)
+
         events = Event.objects.filter(filters).order_by('-event_date')
+        print("Events found:", events.count())
 
         page = self.paginate_queryset(events)
         if page is not None:
