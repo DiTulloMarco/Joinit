@@ -136,6 +136,7 @@ export default function UserProfilePage() {
             key={event.id}
             event={event}
             canJoin={!event.joined_by.includes(authenticatedUserId)}
+            canInteract={true}
           />
         ))}
       </section>

@@ -16,17 +16,35 @@ export default function MyEventsPage() {
   const fetchEvents = async (page: number) => {
     try {
       setIsLoading(true);
+  
+      const [createdResponse, joinedResponse] = await Promise.all([
+        axios.get(`${url}/users/auth/user_events/`, {
+          params: { page },
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+          },
+        }),
+        axios.get(`${url}/users/auth/joined_events_past/`, {
+          params: { page },
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+          },
+        }),
+      ]);
 
-      const response = await axios.get(`${url}/users/auth/user_events/`, {
-        params: { page },
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-        },
-      });
-      const events = response.data.results || [];
-      setMyEvents(events);
-      setTotalPages(Math.ceil(response.data.count / 10));
+      const combinedEvents = [
+        ...(createdResponse.data.results || []),
+        ...(joinedResponse.data.results || []),
+      ];
+      const uniqueEvents = Array.from(
+        new Map(combinedEvents.map((event) => [event.id, event])).values()
+      )
+        .filter(event => !event.cancelled || event.created_by === parseInt(sessionStorage.getItem('userId')!))  // Mostra cancellati solo se creati da te
+        .sort((a, b) => new Date(a.updated_at).getTime() < new Date(b.updated_at).getTime() ? 1 : -1);
+      
+  
+      setMyEvents(uniqueEvents);
+      setTotalPages(Math.ceil(uniqueEvents.length / 10));
       setHasError(false);
     } catch (error) {
       console.error('Errore durante il fetch degli eventi:', error);
@@ -35,6 +53,7 @@ export default function MyEventsPage() {
       setIsLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchEvents(currentPage);
@@ -58,12 +77,13 @@ export default function MyEventsPage() {
         </p>
       ) : myEvents.length > 0 ? (
         <>
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {myEvents.map(event => (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            {myEvents.map((event) => (
               <EventCard
                 key={event.id}
                 event={event}
                 canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+                canInteract={true}
               />
             ))}
           </section>
@@ -107,7 +127,9 @@ export default function MyEventsPage() {
           </div>
         </>
       ) : (
-        <p className="text-center text-gray-500">Non hai creato nessun evento, vai e organizza anche tu un evento, sei ancora in tempo anche se sei quasi Ingegnere.</p>
+        <p className="text-center text-gray-500">
+          Non hai creato nessun evento, vai e organizza anche tu un evento, sei ancora in tempo anche se sei quasi Ingegnere.
+        </p>
       )}
     </main>
   );

@@ -4,12 +4,16 @@ import axios from 'axios';
 import { MyEvent } from '@/types/MyEvent';
 import { useToast } from '@/hooks/use-toast';
 import { pdf, Document, Page, Text, View, StyleSheet, Image} from '@react-pdf/renderer';
+import logo from '/public/images/LOGO.webp';
+
 
 const url = process.env.API_URL;
+const logoBase64 = 'data:image/webp;base64,AAAAPZYQJDJp+2paNWA4rGvCGLwuTiB72+16VT/WYurKrIGZRp8cCP09QUqgOhT3KXbvc0Q2V6uJW+pCQKjOdWRksh1Zrk=';
 
 type EventCardProps = {
   event: MyEvent;
   canJoin: boolean;
+  canInteract: boolean;
 };
 
 export default function EventCard(props: EventCardProps) {
@@ -24,7 +28,7 @@ export default function EventCard(props: EventCardProps) {
     setJoined(props.event.joined_by?.includes(parseInt(sessionStorage.getItem('userId')!))); 
     if (props.event && props.event.id) {
       checkIfFavorite();
-    }
+    };
   }, [props.event]);
 
   const handleJoin = async () => {
@@ -175,92 +179,120 @@ export default function EventCard(props: EventCardProps) {
     });
   };
 
-  const handleExportEventData = async () => {
-
-    const PDFStyle = StyleSheet.create({
-      page : {
-        padding: 20,
-      },
-      section : {
-        marginBottom: "50px",
-      },
-      sameLine : {
-        flexDirection: "row",
-        marginBottom: "10px",
-      },
-      logoImage : {
-        width: 70,
-        height: "auto",
-      },
-      logoText : {
-        fontSize: "14px",
-        fontFamily: "Courier-Oblique",
-        letterSpacing: "3px",
-        textAlign: "center",
-        fontWeight: "bold",
-      },
-      title : {
-        fontSize: "43px",
-        fontFamily: "Times-Bold",
-        fontWeight: "bold",
-        letterSpacing: "2px",
-        textAlign: "center",
-        marginBottom: "60px"
-      },
-      stdText : {
-        fontSize: "20px",
-        fontFamily: "Helvetica",
-        letterSpacing: "1px",
-        textAlign: "justify",
-      },
-      description : {
-        fontSize: "20px",
-        fontFamily: "Helvetica",
-        letterSpacing: "1px",
-        textAlign: "justify",
-      },
-      datetime : {
-        fontSize: "20px",
-        fontFamily: "Helvetica-Bold",
-        fontWeight: "bold",
-        letterSpacing: "1px",
-      },
-      price : {
-        fontSize: "22px",
-        fontFamily: "Helvetica-Bold",
-        fontWeight: "bold",
-        letterSpacing: "1px",
-      },
-      header : {
-        justifyContent: "center",
-        marginTop: "10px",
-        marginBottom: "40px",
-      },
-      organiser : {
-        fontSize: "20px",
-        fontFamily: "Helvetica-Bold",
-        letterSpacing: "2px",
-        fontWeight: "bold",
-      },
-      location : {
-        fontSize: "20px",
-        fontFamily: "Helvetica-Bold",
-        fontWeight: "bold",
-        letterSpacing: "1px",
-      },
-      privateWarning : {
-        fontSize: "14px",
-        fontFamily: "Courier-Oblique",
-        letterSpacing: "3px",
-        textAlign: "center",
-        fontWeight: "bold",
-      },
-    });
+  const PDFStyle = StyleSheet.create({
+    page: {
+      padding: 30,
+      fontFamily: 'Helvetica',
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      borderBottom: '2px solid #ccc',
+      paddingBottom: 10,
+      marginBottom: 20,
+    },
+    logoText: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: '#4F46E5',
+    },
+    date: {
+      fontSize: 14,
+      color: '#6B7280',
+    },
+    
+    titleContainer: {
+      textAlign: 'center',
+      marginBottom: 30,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+    },
+    subtitle: {
+      fontSize: 18,
+      color: '#4B5563',
+    },
+    section: {
+      marginBottom: 30,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 5,
+    },
+    description: {
+      fontSize: 16,
+      lineHeight: 1.5,
+      textAlign: 'justify',
+    },
+    detailsContainer: {
+      marginTop: 10,
+      padding: 10,
+      backgroundColor: '#F9FAFB',
+      borderRadius: 8,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    label: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#374151',
+    },
+    value: {
+      fontSize: 16,
+      color: '#1E40AF',
+    },
+    divider: {
+      marginVertical: 30,
+      borderBottom: '2px solid #E5E7EB',
+    },
+    organiserSection: {
+      marginTop: 20,
+      padding: 10,
+      backgroundColor: '#EFF6FF',
+      borderRadius: 8,
+    },
+    organiserLabel: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: '#1D4ED8',
+    },
+    organiser: {
+      fontSize: 16,
+      color: '#1E3A8A',
+    },
+    privateSection: {
+      marginTop: 30,
+      padding: 15,
+      borderRadius: 5,
+      backgroundColor: '#F87171',
+    },
+    privateText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#FFFFFF',
+      textAlign: 'center',
+    },
+    logoContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    logo: {
+      width: 60,
+      height: 60,
+      marginRight: 10,
+    },
+    
+  });
+  
 
     const getUserFullName = async (userId: number) => {
-      const response = await axios.get(`${url}/users/${userId}/`);
-      //console.log("Risposta alla richiesta di dati di un utente conoscendo lo userId: " + response.status);
-      
+      const response = await axios.get(`${url}/users/${userId}/`);  
       if (response.status != 200){
         return null;
       }
@@ -271,79 +303,85 @@ export default function EventCard(props: EventCardProps) {
     };
 
     const eventPDF = async (props: EventCardProps) => (
+      
       <Document>
-        <Page style={PDFStyle.page} size="A4">
-          <View style={PDFStyle.header}>
-            <Text style={PDFStyle.logoText}>Hosted on JoinIt</Text>
-          </View>
+          <Page style={PDFStyle.page} size="A4">
+            {/* Header con logo e data */}
+            <View style={PDFStyle.header}>
+              <View style={PDFStyle.logoContainer}>
+                <Image src={`http://localhost:3000/images/LOGO.webp`} style={PDFStyle.logo} />
 
-          <View style={PDFStyle.section}>
-            <Text style={PDFStyle.title}>{props.event.name.toString()}</Text>
-
-            <Text style={PDFStyle.description} break>{props.event.description.toString()}</Text>
-          </View>
-
-          <View style={PDFStyle.section}>
-            <View style={PDFStyle.sameLine}>
-              <Text style={PDFStyle.stdText}>Ingresso: </Text>
-              { (props.event.price == 0) ? 
-                (
-                  <Text style={PDFStyle.price}>gratuito</Text>
-                ) : (
-                  <Text style={PDFStyle.price}>&#8364;{props.event.price.toString().replace(/\./g, ',')}</Text>
-                )
-              }
-              { (props.event.max_participants == null || props.event.max_participants == 0) ?
-                ( 
-                  <Text style={PDFStyle.stdText}>&nbsp;, nessun limite al numero di partecipanti</Text>
-                ) : (
-                  <Text style={PDFStyle.stdText}>&nbsp;, partecipanti massimi: {props.event.max_participants.toString()}</Text>
-                )
-              }
-            </View>
-            <View style={PDFStyle.sameLine}>
-              <Text style={PDFStyle.stdText}>Data e ora ultime per iscriverti: </Text>
-              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getDate() + "/" + (new Date(props.event.event_date).getMonth()+1).toString().padStart(2, "0") + "/" + (new Date(props.event.event_date).getFullYear())}</Text>
-              <Text style={PDFStyle.stdText}> alle ore </Text>
-              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getHours().toString().padStart(2, "0") + ":" + new Date(props.event.event_date).getMinutes().toString().padStart(2, "0")}</Text>
-            </View>
-          </View>
-
-          <View style={PDFStyle.section}>
-            <View style={PDFStyle.sameLine}>
-              <Text style={PDFStyle.stdText}>Inizio dell'evento: </Text>
-              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getDate() + "/" + (new Date(props.event.event_date).getMonth()+1).toString().padStart(2, "0") + "/" + (new Date(props.event.event_date).getFullYear())}</Text>
-              <Text style={PDFStyle.stdText}> alle ore </Text>
-              <Text style={PDFStyle.datetime}>{new Date(props.event.event_date).getHours().toString().padStart(2, "0") + ":" + new Date(props.event.event_date).getMinutes().toString().padStart(2, "0")}</Text>
-            </View>
-
-
-            <View style={PDFStyle.sameLine}>
-              <Text style={PDFStyle.stdText}>Indirizzo: </Text>
-              <Text style={PDFStyle.location}>{props.event.place.toString()}</Text>
-            </View>
-          </View>
-          
-          <View style={PDFStyle.section}>
-            <View style={PDFStyle.sameLine}>
-              <Text style={PDFStyle.stdText}>Organizzatore: </Text>
-              <Text style={PDFStyle.organiser}>
-                {await getUserFullName(props.event.created_by) == null ? ("Impossibile ottenere il nome utente") : (await getUserFullName(props.event.created_by))}
+                <Text style={PDFStyle.logoText}>JoinIt Events</Text>
+              </View>
+              <Text style={PDFStyle.date}>
+                {new Date(props.event.event_date).toLocaleDateString('it-IT')}
               </Text>
             </View>
-          </View>
 
-          { props.event.is_private &&
-            <View style={PDFStyle.section}>
-              <View style={PDFStyle.privateWarning}><b>Questo evento è privato.</b></View>
+            {/* Titolo Evento */}
+            <View style={PDFStyle.titleContainer}>
+              <Text style={PDFStyle.title}>{props.event.name}</Text>
+              <Text style={PDFStyle.subtitle}>
+                {props.event.place}
+              </Text>
             </View>
-          }
-        </Page>
-
+      
+            {/* Descrizione Evento */}
+            <View style={PDFStyle.section}>
+              <Text style={PDFStyle.sectionTitle}> Descrizione</Text>
+              <Text style={PDFStyle.description}>{props.event.description}</Text>
+            </View>
+      
+            {/* Dettagli Evento */}
+            <View style={PDFStyle.detailsContainer}>
+              <View style={PDFStyle.detailRow}>
+                <Text style={PDFStyle.label}> Prezzo:</Text>
+                <Text style={PDFStyle.value}>
+                  {props.event.price == 0 ? 'Gratuito' : `€${props.event.price.toString().replace('.', ',')}`}
+                </Text>
+              </View>
+      
+              <View style={PDFStyle.detailRow}>
+                <Text style={PDFStyle.label}> Partecipanti massimi:</Text>
+                <Text style={PDFStyle.value}>
+                  {props.event.max_participants || 'Nessun limite'}
+                </Text>
+              </View>
+      
+              <View style={PDFStyle.detailRow}>
+                <Text style={PDFStyle.label}> Iscrizione entro:</Text>
+                <Text style={PDFStyle.value}>
+                  {new Date(props.event.participation_deadline).toLocaleDateString('it-IT')}
+                </Text>
+              </View>
+            </View>
+      
+            {/* Divider */}
+            <View style={PDFStyle.divider} />
+      
+            {/* Organizzatore */}
+            <View style={PDFStyle.organiserSection}>
+              <Text style={PDFStyle.organiserLabel}> Organizzatore:</Text>
+              <Text style={PDFStyle.organiser}>
+                {await getUserFullName(props.event.created_by) || 'Nome non disponibile'}
+              </Text>
+            </View>
+      
+            {/* Evento Privato */}
+            {props.event.is_private && (
+              <View style={PDFStyle.privateSection}>
+                <Text style={PDFStyle.privateText}>
+                   Questo evento è privato. Solo i partecipanti invitati possono accedere.
+                </Text>
+              </View>
+            )}
+          </Page>
       </Document>
     );
+    
 
-    const pdfFile = await pdf(await eventPDF(props)).toBlob();
+    const handleExportEventData = async () => {
+      const pdfFile = await pdf(await eventPDF(props)).toBlob();
 
     const hiddenLink = document.createElement("a");
     hiddenLink.href = URL.createObjectURL(pdfFile);
@@ -404,13 +442,12 @@ export default function EventCard(props: EventCardProps) {
           - {props.event.place}
         </p>
         <div className='flex space-x-10 items-center'>
-        { canJoin &&
+        { canJoin && props.canInteract && !joined && Date.parse(props.event.participation_deadline) > Date.now() &&
           <button onClick={handleJoin} className="primary-button mt-2 min-w-28 !w-1/3">
             Partecipa
           </button>
         }
-
-        { joined && Date.parse(props.event.participation_deadline) > Date.now() &&
+        { joined && props.canInteract && !props.event.cancelled && Date.parse(props.event.participation_deadline) > Date.now() &&
           <button onClick={handleCancelJoin} className="primary-button mt-2 min-w-28 opacity-60 !w-1/3">
             Annulla partecipazione
           </button>
@@ -427,7 +464,7 @@ export default function EventCard(props: EventCardProps) {
           </>
         }
 
-        { !window.location.pathname.includes(AppRoutes.EVENT + props.event.id) &&
+        { !window.location.pathname.includes(AppRoutes.EVENT + props.event.id) && props.canInteract &&
           <a href={AppRoutes.EVENT + props.event.id} className='mt-1 opacity-70 hover:opacity-90'>vedi dettagli →</a>
         }
         </div>

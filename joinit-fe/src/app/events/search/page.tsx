@@ -216,7 +216,12 @@ const [totalPages, setTotalPages] = useState<number>(1);
       <>
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {searchResults.map((event) => (
-            <EventCard key={event.id} event={event} canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))} />
+            <EventCard
+              key={event.id}
+              event={event}
+              canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+              canInteract={true}
+            />
           ))}
         </section>
 

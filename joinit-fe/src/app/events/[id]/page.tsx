@@ -309,7 +309,7 @@ export default function EventPage(queryString: any) {
   return (
     <main className="flex-1 p-8">
       <h2 className="text-3xl font-bold mb-4">{event.name}</h2>
-      <EventCard event={event} canJoin={canJoin} />
+      <EventCard event={event} canJoin={canJoin} canInteract={true}/>
       <div
         ref={mapContainerRef}
         style={{ height: `${mapHeight}px`, width: "100%" }}

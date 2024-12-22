@@ -16,6 +16,7 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_str, force_bytes
 from django.contrib.auth.base_user import BaseUserManager
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from django.utils import timezone
 
 
 
@@ -23,6 +24,7 @@ from .models import CustomUser
 from . import  serializers
 from events.serializers import EventSerializer
 from users.token import token_generator
+from events.models import Event
 
 # Create your views here.  
 
@@ -105,7 +107,7 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     def send_reset_password_email(self, request):
         user = CustomUser.objects.get(email=request.data['email'])
         current_site = get_current_site(request)
-        mail_subject = 'Pinnalo - Reset Password'
+        mail_subject = 'JoinIt - Reset Password'
         message = render_to_string('reset_password.html', {
             'user': user,
             'domain': current_site.domain,  
@@ -148,6 +150,18 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         serializer = EventSerializer(user_events, many=True, context={'request': request})  
         return Response(serializer.data)
     
+    @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
+    def joined_events_past(self, request):
+        joined_events = request.user.joined_events.order_by('-event_date')
+
+        page = self.paginate_queryset(joined_events)
+        if page is not None:
+            serializer = EventSerializer(page, many=True, context={'request': request})  
+            return self.get_paginated_response(serializer.data)
+
+        serializer = EventSerializer(joined_events, many=True, context={'request': request})  
+        return Response(serializer.data)
+
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = serializers.UserBaseInfoSerializer
@@ -184,6 +198,18 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
             return self.get_paginated_response(serializer.data)
         
         serializer = EventSerializer(user_events, many=True,context={'request': request})
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
+    def joined_events_past(self, request):
+        joined_events = request.user.joined_events.order_by('-event_date')
+
+        page = self.paginate_queryset(joined_events)
+        if page is not None:
+            serializer = EventSerializer(page, many=True, context={'request': request})  
+            return self.get_paginated_response(serializer.data)
+
+        serializer = EventSerializer(joined_events, many=True, context={'request': request})  
         return Response(serializer.data)
     
 class TokenRefreshView(TokenRefreshView):

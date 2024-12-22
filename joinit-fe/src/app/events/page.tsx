@@ -12,12 +12,12 @@ export default function EventsPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
-  const userId = sessionStorage.getItem('userId')
+  const userId = sessionStorage.getItem('userId');
 
   const fetchEvents = async (page: number) => {
     setLoading(true);
     try {
-      const response = await axios.get(`${url}/events/list_public/`, { params: { page, userId } })
+      const response = await axios.get(`${url}/events/list_public/`, { params: { page, userId } });
       setFeaturedEvent(response.data.results[0]);
       setOtherEvents(response.data.results.slice(1));
       setTotalPages(Math.ceil(response.data.count / 10));
@@ -49,6 +49,7 @@ export default function EventsPage() {
             <EventCard
               event={featuredEvent}
               canJoin={!featuredEvent.joined_by.includes(parseInt(sessionStorage.getItem('userId') || '0'))}
+              canInteract={true}
             />
           ) : (
             <p>Nessun evento in primo piano</p>
@@ -64,6 +65,7 @@ export default function EventsPage() {
                   key={event.id}
                   event={event}
                   canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId') || '0'))}
+                  canInteract={true}
                 />
               ))
             ) : (

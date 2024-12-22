@@ -58,7 +58,7 @@ class Event(models.Model):
     is_private = models.BooleanField(default=False, null=False, blank=True)
     cancelled = models.BooleanField(default=False, null=False, blank=True)
 
-    joined_by = models.ManyToManyField(CustomUser)
+    joined_by = models.ManyToManyField(CustomUser, related_name='joined_events')
 
     def _calculate_file_hash(self, file):
         """Calcola l'hash MD5 di un file."""
@@ -70,13 +70,20 @@ class Event(models.Model):
     def save(self, *args, validate_dates=True, **kwargs):
         if validate_dates and not self.cancelled:
             min_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            if self.pk:
+                previous = Event.objects.filter(pk=self.pk).first()
+            else:
+                previous = None
 
-            if self.participation_deadline and self.participation_deadline < min_date:
-                raise ValueError(
-                    f"Deadline {self.participation_deadline} must be in the future or today: {min_date}"
-                )
-            if self.participation_deadline and self.event_date and self.participation_deadline > self.event_date:
-                raise ValueError("Participation deadline must be before event date")
+            if self.participation_deadline:
+                if previous and self.participation_deadline == previous.participation_deadline:
+                    pass
+                elif self.participation_deadline < min_date:
+                    raise ValueError(
+                        f"Deadline {self.participation_deadline} must be in the future or today: {min_date}"
+                    )
+                if self.event_date and self.participation_deadline > self.event_date:
+                    raise ValueError("Participation deadline must be before event date")
         if self.pk:
             previous = Event.objects.filter(pk=self.pk).first()
             if self.cover_image and (not previous or self.cover_image != previous.cover_image):

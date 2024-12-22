@@ -7,13 +7,13 @@ from rest_framework.schemas.openapi import AutoSchema
 from rest_framework.exceptions import PermissionDenied
 
 from django.db.models import Q
-from django.utils import timezone
 from users.models import CustomUser
 from .models import Event, Rating, Favorite
 from .serializers import EventSerializer, RatingSerializer, FavoriteSerializer
 from rest_framework.exceptions import ValidationError
 from django.utils.timezone import now
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.utils import timezone 
 
 
 
@@ -93,7 +93,7 @@ class EventViewSet(ModelViewSet):
         user_id = request.query_params.get('userId')
         
         try:
-            events = Event.objects.filter(Q(is_private=False, cancelled=False) |Q(is_private=True, joined_by__id=user_id)).order_by('-event_date')
+            events = Event.objects.filter(Q(is_private=False, cancelled=False) |Q(is_private=True, joined_by__id=user_id)).distinct().order_by('-event_date')
 
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -180,9 +180,6 @@ class EventViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(user=user, event=event)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-
 
     @action(detail=True, methods=['GET'], permission_classes=[AllowAny])
     def ratings(self, request, pk=None):
@@ -274,7 +271,7 @@ class EventViewSet(ModelViewSet):
         else:
             filters &= Q(is_private=False)
 
-        events = Event.objects.filter(filters).order_by('-event_date')
+        events = Event.objects.filter(filters).distinct().order_by('-event_date')
         print("Events found:", events.count())
 
         page = self.paginate_queryset(events)
@@ -354,17 +351,3 @@ class EventViewSet(ModelViewSet):
                 {'error': 'Unable to cancel the event.', 'details': str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
         )
-
-
-    """
-    def list(self, request):
-        pass
-
-    def create(self, request):
-        pass
-
-    def retrieve(self, request, pk=None):
-        # return a particular event (specified by pk)
-        pass
-
-    """

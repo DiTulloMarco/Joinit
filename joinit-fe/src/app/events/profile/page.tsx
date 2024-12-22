@@ -13,6 +13,8 @@ const url = process.env.API_URL;
 export default function ProfilePage() {
   const [userData, setUserData] = useState<User>({} as User);
   const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
+  const [joinedEvents, setJoinedEvents] = useState<MyEvent[]>([]);
+  const [showMyEvents, setShowMyEvents] = useState<boolean>(true);
   const [modal, setModal] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -39,7 +41,7 @@ export default function ProfilePage() {
   const fetchEvents = async (page: number) => {
     try {
       const response = await axios.get(`${url}/users/auth/user_events/`, {
-        params: { page },
+        params: { page ,ordering: '-creation_ts'},
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
@@ -53,16 +55,39 @@ export default function ProfilePage() {
     }
   };
 
+  const fetchJoinedEvents = async (page: number) => { 
+    try {
+      const response = await axios.get(`${url}/users/auth/joined_events_past/`, {
+        params: { page ,ordering: '-creation_ts'},
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+      });
+      setJoinedEvents(response.data.results || []);
+      setTotalPages(Math.ceil(response.data.count / 10));
+    } catch (error) {
+      console.error('Failed to fetch the events joined by the user', error);
+    }
+  };
+
   useEffect(() => {
     fetchUser();
     fetchEvents(currentPage);
+    fetchJoinedEvents(currentPage);
   }, [currentPage]);
-
+  
   const goToPage = (page: number) => {
     if (page > 0 && page <= totalPages) {
       setCurrentPage(page);
+      if (showMyEvents) {
+        fetchEvents(page);
+      } else {
+        fetchJoinedEvents(page);
+      }
     }
   };
+  
 
   const onSubmit: SubmitHandler<EditProfileFormType> = async (data) => {
     try {
@@ -117,50 +142,72 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold mb-4">I Tuoi Eventi</h2>
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            {myEvents.map(event => (
-              <EventCard
-                key={event.id}
-                event={event}
-                canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))}
-              />
-            ))}
-          </section>
+          <h2 className="text-2xl mb-4">
+  {showMyEvents ? (
+    <>
+      <b>I Tuoi Eventi</b>&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+      <button className="hover:underline" onClick={() => setShowMyEvents(false)}>
+        Storico Eventi
+      </button>
+    </>
+  ) : (
+    <>
+      <button className="hover:underline" onClick={() => setShowMyEvents(true)}>
+        I Tuoi Eventi
+      </button>
+      &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;<b>Storico Eventi</b>
+    </>
+  )}
+</h2>
 
-          <div className="flex justify-center items-center mt-6 space-x-2">
-            <button
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded ${
-                currentPage === 1 ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'
-              }`}
-            >
-              &lt;
-            </button>
-            {Array.from({ length: totalPages }, (_, index) => (
-              <button
-                key={index + 1}
-                onClick={() => goToPage(index + 1)}
-                className={`px-4 py-2 rounded ${
-                  currentPage === index + 1
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {index + 1}
-              </button>
-            ))}
-            <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded ${
-                currentPage === totalPages ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'
-              }`}
-            >
-              &gt;
-            </button>
-          </div>
+<section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {(showMyEvents ? myEvents : joinedEvents).map(event => (
+    <EventCard
+      key={event.id}
+      event={event}
+      canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))}
+      canInteract={!event.cancelled || event.created_by === parseInt(sessionStorage.getItem('userId') || '0')}
+    />
+  ))}
+</section>
+
+<div className="flex justify-center items-center mt-6 space-x-2">
+  <button
+    onClick={() => goToPage(currentPage - 1)}
+    disabled={currentPage === 1}
+    className={`px-4 py-2 rounded ${
+      currentPage === 1
+        ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+        : 'bg-blue-500 text-white hover:bg-blue-600'
+    }`}
+  >
+    &lt;
+  </button>
+  {Array.from({ length: totalPages }, (_, index) => (
+    <button
+      key={index + 1}
+      onClick={() => goToPage(index + 1)}
+      className={`px-4 py-2 rounded ${
+        currentPage === index + 1
+          ? 'bg-blue-500 text-white'
+          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      }`}
+    >
+      {index + 1}
+    </button>
+  ))}
+  <button
+    onClick={() => goToPage(currentPage + 1)}
+    disabled={currentPage === totalPages}
+    className={`px-4 py-2 rounded ${
+      currentPage === totalPages
+        ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+        : 'bg-blue-500 text-white hover:bg-blue-600'
+    }`}
+  >
+    &gt;
+  </button>
+</div>
 
           {modal && (
             <div className="fixed inset-0 flex items-center bg-gray-900 bg-opacity-50 justify-center z-40">

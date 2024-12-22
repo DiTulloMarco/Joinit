@@ -43,6 +43,7 @@ export default function FavoriteEventsPage() {
   useEffect(() => {
     fetchFavoriteEvents();
   }, []);
+
   const goToPage = (page: number) => {
     if (page > 0 && page <= totalPages) {
       setCurrentPage(page);
@@ -66,7 +67,7 @@ export default function FavoriteEventsPage() {
         </p>
       ) : paginatedEvents.length > 0 ? (
         <>
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
             {paginatedEvents
               .filter((event) => !event.cancelled)
               .map((event) => (
@@ -74,6 +75,7 @@ export default function FavoriteEventsPage() {
                   key={event.id}
                   event={event}
                   canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
+                  canInteract={!event.cancelled || event.created_by === parseInt(sessionStorage.getItem('userId') || '0')}
                 />
               ))}
           </section>
