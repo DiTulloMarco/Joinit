@@ -49,6 +49,16 @@ export default function EventCard(props: EventCardProps) {
   };
 
   const handleCancelJoin = async () => {
+    const userId = sessionStorage.getItem('userId');
+    const creatorId = props.event.created_by;
+    if (creatorId && userId === creatorId.toString()) {
+      toast({
+        title: 'Impossibile cancellare',
+        description: 'Non puoi rimuovere la tua partecipazione come creatore dell\'evento!',
+        duration: 5000,
+      });
+      return; 
+    }
     try {
       await axios.put(`${url}/events/${props.event.id}/cancel_join/`, {
         userId: sessionStorage.getItem('userId'),
@@ -400,7 +410,7 @@ export default function EventCard(props: EventCardProps) {
           </button>
         }
 
-        { joined &&
+        { joined && Date.parse(props.event.participation_deadline) > Date.now() &&
           <button onClick={handleCancelJoin} className="primary-button mt-2 min-w-28 opacity-60 !w-1/3">
             Annulla partecipazione
           </button>

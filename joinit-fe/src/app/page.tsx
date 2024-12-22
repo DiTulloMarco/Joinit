@@ -2,6 +2,7 @@
 import React from 'react';
 import Navbar from '../components/Navbar';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default async function Home() {
   return (
@@ -28,12 +29,13 @@ export default async function Home() {
             placeholder="you@example.com"
             className="primary-input !rounded-r-none"
           />
-          <button 
-            type="submit"
-            className="primary-button !w-1/2 !mt-1 !rounded-l-none !px-0"
-          >
-            Registrati
-          </button>
+           <Link 
+              href="/register"
+              className="primary-button !w-1/2 !mt-1 !rounded-l-none !px-0 text-center bg-gray-300 dark:bg-gray-700 rounded text-gray-900 dark:text-gray-100"
+              aria-label="Register"
+            >
+              Registrati
+            </Link>
         </div>
       </section>
 

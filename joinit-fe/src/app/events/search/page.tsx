@@ -11,9 +11,11 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = useState<MyEvent[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("Nessun evento per ora ;(");
-
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false); 
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [lastSearchParams, setLastSearchParams] = useState({});
+const [totalPages, setTotalPages] = useState<number>(1);
   const [filters, setFilters] = useState({
     name: '',
     place: '',
@@ -32,14 +34,20 @@ export default function SearchPage() {
     }
   };
 
-  const fetchDefaultEvents = async () => {
+  const fetchEvents = async (endpoint: string, params = {}) => {
     setIsLoading(true);
+    const userId = sessionStorage.getItem('userId');
     try {
-      const response = await axios.get(`${url}/events/list_public/`);
+      const response = await axios.get(endpoint, {
+        params: { ...params, page: currentPage ,userId: userId},
+      });
       setSearchResults(response.data.results || []);
+      setTotalPages(Math.ceil(response.data.count / 10));
+      setError("");
     } catch (error) {
-      console.error('Errore nel caricamento degli eventi predefiniti:', error);
-      setError('Errore durante il caricamento degli eventi.');
+      console.error("Errore durante il caricamento degli eventi:", error);
+      setError("Errore durante il caricamento degli eventi.");
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -47,45 +55,37 @@ export default function SearchPage() {
 
   useEffect(() => {
     fetchCategories();
-    fetchDefaultEvents();
   }, []);
 
-  const fetchSearchResults = async () => {
-    setIsLoading(true);
-    try {
-      const response = await axios.get(`${url}/events/search/?q=${searchQuery}`);
-      setSearchResults(response.data.results || []);
-      setError("");
-    } catch (error) {
-      console.error('Errore nella ricerca semplice:', error);
-      setError('Errore durante la ricerca.');
-      setSearchResults([]);
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    const params = { ...lastSearchParams, page: currentPage };
+    fetchEvents(`${url}/events/search/`, params);
+}, [currentPage]);
+
+  const goToPage = (page: number) => {
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
     }
   };
 
-  const fetchAdvancedSearchResults = async () => {
-    setIsLoading(true);
-    try {
-      const queryParams = new URLSearchParams();
+  const fetchSearchResults = () => {
+    const params = { q: searchQuery, page: 1 };
+    setCurrentPage(1);
+    setLastSearchParams(params);
+    fetchEvents(`${url}/events/search/`, params);
+  };
 
-      if (filters.name) queryParams.append('name', filters.name);
-      if (filters.place) queryParams.append('place', filters.place);
-      if (filters.category) queryParams.append('category', filters.category);
-      if (filters.max_price) queryParams.append('max_price', filters.max_price);
-      if (filters.max_participants) queryParams.append('max_participants', filters.max_participants);
-      if (filters.tags) queryParams.append('tags', filters.tags);
-
-      const response = await axios.get(`${url}/events/search/?${queryParams.toString()}`);
-      setSearchResults(response.data.results || []);
-    } catch (error) {
-      console.error('Errore nella ricerca avanzata:', error);
-      setError('Errore durante la ricerca avanzata.');
-    } finally {
-      setIsLoading(false);
-      setShowAdvancedFilters(false);
-    }
+  const fetchAdvancedSearchResults = () => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    const params = Object.fromEntries(queryParams);
+    params.page = String(1);
+    setCurrentPage(1);
+    setLastSearchParams(params);
+    fetchEvents(`${url}/events/search/`, params);
+    setShowAdvancedFilters(false);
   };
 
   return (
@@ -99,7 +99,7 @@ export default function SearchPage() {
             if (e.key === 'Enter') fetchSearchResults();
           }}
           placeholder="Nome, categoria o tags dell'evento"
-          className="w-full p-4 border border-gray-300 rounded-full"
+          className="w-full p-4 border border-gray-300 rounded-full bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
           aria-label="Ricerca eventi"
         />
         <span className="material-icons absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -117,7 +117,7 @@ export default function SearchPage() {
       </div>
       {showAdvancedFilters && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl relative">
+          <div className="bg-white dark:bg-gray-800 dark:text-gray-100 rounded-lg shadow-lg p-6 w-full max-w-3xl relative">
             <h2 className="text-2xl font-bold mb-4">Filtri Avanzati</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -126,7 +126,7 @@ export default function SearchPage() {
                   type="text"
                   value={filters.name}
                   onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   placeholder="Nome dell'evento"
                 />
               </div>
@@ -137,7 +137,7 @@ export default function SearchPage() {
                   type="text"
                   value={filters.place}
                   onChange={(e) => setFilters({ ...filters, place: e.target.value })}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   placeholder="Luogo"
                 />
               </div>
@@ -147,7 +147,7 @@ export default function SearchPage() {
                 <select
                   value={filters.category}
                   onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                 >
                   <option value="">Seleziona una categoria</option>
                   {categories.map((category) => (
@@ -164,7 +164,7 @@ export default function SearchPage() {
                   type="number"
                   value={filters.max_price}
                   onChange={(e) => setFilters({ ...filters, max_price: e.target.value })}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   placeholder="Prezzo massimo"
                 />
               </div>
@@ -175,7 +175,7 @@ export default function SearchPage() {
                   type="number"
                   value={filters.max_participants}
                   onChange={(e) => setFilters({ ...filters, max_participants: e.target.value })}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   placeholder="Numero massimo di partecipanti"
                 />
               </div>
@@ -186,7 +186,7 @@ export default function SearchPage() {
                   type="text"
                   value={filters.tags}
                   onChange={(e) => setFilters({ ...filters, tags: e.target.value })}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
                   placeholder="Tags separati da virgole"
                 />
               </div>
@@ -210,17 +210,55 @@ export default function SearchPage() {
         </div>
       )}
 
-      {isLoading ? (
-        <p className="text-center text-gray-500">Caricamento...</p>
-      ) : searchResults.length > 0 ? (
+    {isLoading ? (
+      <p className="text-center text-gray-500">Caricamento...</p>
+    ) : searchResults.length > 0 ? (
+      <>
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {searchResults.map((event) => (
-            <EventCard key={event.id} event={event} canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}/>
+            <EventCard key={event.id} event={event} canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))} />
           ))}
         </section>
-      ) : (
-        <p className="text-center text-gray-500">{error}</p>
-      )}
+
+        <div className="flex justify-center items-center mt-6 space-x-2">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-4 py-2 rounded ${
+              currentPage === 1 ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}
+          >
+            &lt;
+          </button>
+
+          {Array.from({ length: totalPages }, (_, index) => (
+            <button
+              key={index + 1}
+              onClick={() => goToPage(index + 1)}
+              className={`px-4 py-2 rounded ${
+                currentPage === index + 1
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {index + 1}
+            </button>
+          ))}
+
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-4 py-2 rounded ${
+              currentPage === totalPages ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}
+          >
+            &gt;
+          </button>
+        </div>
+      </>
+    ) : (
+      <p className="text-center text-gray-500">{error}</p>
+    )}
     </main>
   );
 }
