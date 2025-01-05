@@ -4,14 +4,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 from rest_framework_simplejwt.tokens import AccessToken
 from .models import CustomUser
 
-class AuthSerializer(ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ['id', 'email', 'password', 'first_name', 'last_name']
-        extra_kwargs = {
-            'password': {'write_only': True},
-        }
-
 
 class UserSerializer(ModelSerializer):
     class Meta:

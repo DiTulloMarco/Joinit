@@ -30,10 +30,12 @@ from events.models import Event
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     schema = AutoSchema(tags=['Users'])
+    permission_classes=[AllowAny]
     serializer_class = serializers.CustomTokenObtainPairSerializer
 
 class CustomTokenRefreshView(TokenRefreshView):
     schema = AutoSchema(tags=['Users'])
+    permission_classes=[AllowAny]
     serializer_class = serializers.CustomTokenRefreshSerializer
 
 class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
@@ -42,9 +44,9 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     schema = AutoSchema(tags=['Users'])
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
-    @action(detail=False, methods=['POST'], permission_classes=[AllowAny], serializer_class=serializers.AuthSerializer)
+    @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
     def register(self, request):
-        usr_srlz = serializers.AuthSerializer(data=request.data)
+        usr_srlz = serializers.UserSerializer(data=request.data)
         usr_srlz.is_valid(raise_exception=True)
         user = usr_srlz.save()
         token = RefreshToken.for_user(user)
