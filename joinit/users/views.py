@@ -39,13 +39,6 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     schema = AutoSchema(tags=['Users'])
     parser_classes = [JSONParser, MultiPartParser, FormParser]
-    
-    def get_serializer_class(self):
-        if self.action == 'send_reset_password_email':
-            return serializers.SendPasswordRecoveryInfoSerializer
-        if self.action == 'set_new_password':
-            return serializers.SetNewPasswordSerializer
-        return serializers.UserEditSerializer
 
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny], serializer_class=serializers.AuthSerializer)
     def register(self, request):
@@ -101,9 +94,12 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         serialized = self.get_serializer(user)
         return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': serialized.data})
     
-    @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['POST'], permission_classes=[AllowAny], serializer_class=serializers.SendPasswordRecoveryInfoSerializer)
     def send_reset_password_email(self, request):
-        user = CustomUser.objects.get(email=request.data['email'])
+        try:
+            user = CustomUser.objects.get(email=request.data['email'])
+        except CustomUser.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         current_site = get_current_site(request)
         mail_subject = 'Pinnalo - Reset Password'
         message = render_to_string('reset_password.html', {
@@ -121,20 +117,20 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
 
         return Response({'Message': 'Reset password link sent to your email'})
 
-    @action(detail=False, methods=['PUT'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['PUT'], permission_classes=[AllowAny], serializer_class=serializers.SetNewPasswordSerializer)
     def set_new_password(self, request):
         try:
             uid = force_str(urlsafe_base64_decode(request.data['uidb64']))  
-            user = CustomUser.objects.get(id=uid)  
+            user = CustomUser.objects.get(id=uid)
         except(TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):  
-            user = None  
-            return Response({'Error': 'User not found'})
+            user = None
+            return Response({'Error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
         if user is not None and token_generator.check_token(user, request.data['token']):  
             user.set_password(request.data['password'])  
             user.save()  
             return Response({'Your password has been set. Now you can login your account.'})  
         else:  
-            return Response({'Password reset link is invalid!'})  
+            return Response({'Error': 'Password reset link is invalid!'}, status=status.HTTP_400_BAD_REQUEST)  
     
     @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
     def user_events(self, request):

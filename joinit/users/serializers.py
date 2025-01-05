@@ -60,7 +60,6 @@ class GoogleUserSerializer(ModelSerializer):
         model = CustomUser
         fields = ['id', 'email', 'first_name', 'last_name']
 
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super(CustomTokenObtainPairSerializer, self).validate(attrs)
