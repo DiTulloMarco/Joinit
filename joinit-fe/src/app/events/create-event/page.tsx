@@ -27,6 +27,18 @@ export default function CreateEventPage() {
     fetchCategories();
   }, [])
 
+  const getDefaultEventDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return date;
+  };
+
+  const getDefaultDeadline = () => {
+    const date = new Date();
+    date.setHours(date.getHours() + 3);
+    return date;
+  };
+
 
   const onSubmit: SubmitHandler<CreateEventFormType> = async (data) => {
     try {
@@ -108,7 +120,7 @@ const handleRemoveTag = (tag: string) => {
               <Controller
                 name="event_date"
                 control={control}
-                defaultValue={new Date()}
+                defaultValue={getDefaultEventDate()}
                 rules={{
                   required: { value: true, message: 'La data è obbligatoria' },
                 }}
@@ -157,7 +169,7 @@ const handleRemoveTag = (tag: string) => {
               <Controller
                 name="participation_deadline"
                 control={control}
-                defaultValue={new Date()}
+                defaultValue={getDefaultDeadline()}
                 rules={{
                   required: { value: true, message: 'La data è obbligatoria' },
                   validate: (value: Date, data: CreateEventFormType) => {
@@ -220,7 +232,7 @@ const handleRemoveTag = (tag: string) => {
                     <input
                       type='text'
                       id="place"
-                      placeholder="Inserisci il luogo dell'evento"
+                      placeholder="Inserisci il luogo dell'evento, specifica la citta con il nome completo per un migliore posizionamento"
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
                       required

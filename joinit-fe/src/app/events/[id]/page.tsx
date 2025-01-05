@@ -17,7 +17,6 @@ type RatingFormType = {
   review: string;
 };
 
-
 type Rating = {
   id: number;
   user: string;
@@ -50,10 +49,8 @@ export default function EventPage(queryString: any) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { control, handleSubmit, formState: { errors } } = useForm<RatingFormType>();
   const [participants, setParticipants] = useState<string[]>([]);
-
   const [confirmationModal, setConfirmationModal] = useState<boolean>(false);
   const [triedEventDeletion, SetTriedEventDeletion] = useState<boolean>(false);
-
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [mapHeight] = useState(400);
@@ -96,7 +93,7 @@ export default function EventPage(queryString: any) {
       console.error('Error fetching participants:', error);
     }
   };
-  
+
   useEffect(() => {
     if (confirmationModal) {
       const interval = setInterval
@@ -187,22 +184,15 @@ export default function EventPage(queryString: any) {
 
   useEffect(() => {
     if (event.joined_by && event.joined_by.length > 0) {
-        fetchParticipants();
+      fetchParticipants();
     }
   }, [event.joined_by]);
-
 
   const checkExistingRating = async () => {
     try {
       const response = await axios.get(`${url}/events/${eventId}/ratings/`);
-      console.log('Existing ratings:', response.data);
-  
       const userId = parseInt(sessionStorage.getItem('userId')!);
-  
-      const existingRating = response.data.find((rating: any) => rating.userId === userId);
-  
-      console.log('Existing rating found:', existingRating);
-      return existingRating;
+      return response.data.find((rating: any) => rating.userId === userId);
     } catch (error) {
       console.error('Error checking existing rating:', error);
       return null;
@@ -212,52 +202,43 @@ export default function EventPage(queryString: any) {
   const onRatingFormSubmit: SubmitHandler<RatingFormType> = async (data) => {
     const token = sessionStorage.getItem('authToken');
     const userId = sessionStorage.getItem('userId');
-  
+
     if (!token || !userId) return;
-  
+
     try {
       const existingRating = await checkExistingRating();
-  
-      const endpoint = existingRating
-        ? `${url}/events/${eventId}/update_rating/`
-        : `${url}/events/${eventId}/rate/`;
+      const endpoint = existingRating? `${url}/events/${eventId}/update_rating/`: `${url}/events/${eventId}/rate/`;
       const method = existingRating ? 'put' : 'post';
-  
       const payload = { ...data, userId: parseInt(userId) };
-  
+
       await axios[method](endpoint, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
-      console.log(`${existingRating ? 'Updated' : 'Created'} rating successfully.`);
-      await fetchRatings(); 
+
+      await fetchRatings();
     } catch (error) {
       console.error('Error checking existing rating:', error);
-      return null;
     }
   };
-  
+
   const deleteRating = async (ratingId: number) => {
     const token = sessionStorage.getItem('authToken');
     if (!token) {
       console.error('User not authenticated');
       return;
     }
-  
+
     try {
       await axios.delete(`${url}/events/${eventId}/delete_rating/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log('Rating deleted successfully.');
-      await fetchRatings(); 
+      await fetchRatings();
     } catch (error) {
       console.error('Error delete rating:', error);
-      return null;
     }
   };
-  
 
   const onEditFormSubmit: SubmitHandler<EventFormType> = async (data) => {
     try {
@@ -265,12 +246,12 @@ export default function EventPage(queryString: any) {
         ? data.tags.split(',').map((tag) => tag.trim())
         : [];
       const formData = new FormData();
-  
+
       if (event.joined_by.length > data.max_participants) {
         alert('Il numero massimo di partecipanti non può essere inferiore ai partecipanti attuali.');
         return;
       }
-  
+
       Object.entries(data).forEach(([key, value]) => {
         if (key === 'tags') {
           if (formattedTags.length === 0) {
@@ -286,15 +267,14 @@ export default function EventPage(queryString: any) {
           formData.append(key, typeof value === 'number' ? value.toString() : value);
         }
       });
-  
+
       const response = await axios.patch(`${url}/events/${eventId}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
         },
       });
-  
-      console.log('Event updated:', response.data);
+
       setEvent(response.data);
       setEditModalOpen(false);
       setImagePreview(response.data.cover_image || null);
@@ -302,40 +282,34 @@ export default function EventPage(queryString: any) {
       console.error('Error updating event:', error);
     }
   };
-  
-  
 
   const handleEventDeletion = async () => {
-    const eventId = event.id; 
+    const eventId = event.id;
     const userId = parseInt(sessionStorage.getItem('userId')!);
 
-    console.log(`Invio richiesta per cancellare evento con ID: ${eventId}`);
     const payload = { userId };
-    console.log('Payload:', payload);
 
     try {
-        const response = await axios.put(`${url}/events/${eventId}/cancel_event/`, payload, {
-            headers: {
-                Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-            },
-        });
-        console.log('Risposta cancellazione evento:', response.data);
+      await axios.put(`${url}/events/${eventId}/cancel_event/`, payload, {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+      });
 
-        router.push(AppRoutes.MY_EVENTS);
+      router.push(AppRoutes.MY_EVENTS);
     } catch (error) {
-        if (axios.isAxiosError(error)) {
-            console.error('Errore Axios:', error.response?.data || error.message);
-        } else {
-            console.error('Errore sconosciuto:', error);
-        }
+      if (axios.isAxiosError(error)) {
+        console.error('Errore Axios:', error.response?.data || error.message);
+      } else {
+        console.error('Errore sconosciuto:', error);
+      }
     }
-};
-
+  };
 
   return (
     <main className="flex-1 p-8">
       <h2 className="text-3xl font-bold mb-4">{event.name}</h2>
-      <EventCard event={event} canJoin={canJoin} />
+      <EventCard event={event} canJoin={canJoin} canInteract={true}/>
       <div
         ref={mapContainerRef}
         style={{ height: `${mapHeight}px`, width: "100%" }}
@@ -343,12 +317,12 @@ export default function EventPage(queryString: any) {
       />
       <section className="mt-8 space-y-4">
         <div>
-          <h3 className="text-xl font-semibold">Descrizione</h3>
-          <p className="text-gray-700">{event.description}</p>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Descrizione</h3>
+        <p className="text-gray-700 dark:text-gray-200">{event.description}</p>
         </div>
         <div>
           <h3 className="text-xl font-semibold">Categoria</h3>
-          <p className="text-gray-700">
+          <p className="text-gray-700 dark:text-gray-200">
             {[
               "Commerciale",
               "Culturale",
@@ -365,7 +339,7 @@ export default function EventPage(queryString: any) {
         </div>
         <div>
           <h3 className="text-xl font-semibold">Deadline Partecipazione</h3>
-          <p className="text-gray-700">
+          <p className="text-gray-700 dark:text-gray-200">
             {new Date(event.participation_deadline).toLocaleString()}
           </p>
         </div>
@@ -383,21 +357,21 @@ export default function EventPage(queryString: any) {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-700">Nessun tag disponibile</p>
+            <p className="text-gray-700 dark:text-gray-200">Nessun tag disponibile</p>
           )}
         </div>
         <div>
           <h3 className="text-xl font-semibold">Partecipanti</h3>
-          <p className="text-gray-700">
+          <p className="text-gray-700 dark:text-gray-200">
             {event.joined_by?.length || 0} / {event.max_participants}
           </p>
         </div>
         <div>
           <h3 className="text-xl font-semibold">Prezzo</h3>
-          <p className="text-gray-700">{event.price} €</p>
+          <p className="text-gray-700 dark:text-gray-200">{event.price} €</p>
         </div>
       </section>
-  
+
       <section className="mt-12">
         <h3 className="text-2xl font-bold mb-4">Partecipanti</h3>
         {participants.length > 0 ? (
@@ -418,7 +392,7 @@ export default function EventPage(queryString: any) {
           <p className="text-gray-500">Nessun partecipante al momento.</p>
         )}
       </section>
-  
+
       <section className="mt-12">
         {Date.parse(event.event_date) < Date.now() ? (
           <>
@@ -519,7 +493,7 @@ export default function EventPage(queryString: any) {
           </div>
         )}
       </section>
-  
+
       {event.cancelled && (
         <div className="w-1/2 min-w-50 mt-12">
           <p className="text-[#EA6666] text-sm ml-4">
@@ -527,31 +501,30 @@ export default function EventPage(queryString: any) {
           </p>
         </div>
       )}
-  
-      {!event.cancelled && isCreator && !triedEventDeletion ?
-        (
-          <div className="w-1/2 min-w-50 mt-12">
-            {!confirmationModal ? (
-              <button
-                onClick={() => setConfirmationModal(true)}
-                className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm"
-              >
-                <b>Cancella l'evento</b><span className="material-icons text-[#ea3333]">delete</span>
-              </button>
-            ) : (
-              <button
-                onClick={ () => {handleEventDeletion(); setConfirmationModal(false); SetTriedEventDeletion(true);} }
-                className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-md"
-              >
-                <b>Confermi? </b>
-              </button>
-            )}
-          </div>
-        ) : (
-          <></>
-        )
-      }
-  
+
+      {!event.cancelled && isCreator && !triedEventDeletion ? 
+      (
+        <div className="w-1/2 min-w-50 mt-12">
+          {!confirmationModal ? (
+            <button
+              onClick={() => setConfirmationModal(true)}
+              className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-sm"
+            >
+              <b>Cancella l'evento</b><span className="material-icons text-[#ea3333]">delete</span>
+            </button>
+          ) : (
+            <button
+              onClick={ () => {handleEventDeletion(); setConfirmationModal(false); SetTriedEventDeletion(true);} }
+              className="primary-button hover:border-[#ea3333] hover:border-1 !w-2/5 !text-[#ea3333] !text-md"
+            >
+              <b>Confermi? </b>
+            </button>
+          )}
+        </div>
+      ) : (
+        <></>
+      )}
+
       {isCreator && (
         <div className="mt-4">
           <button
@@ -578,12 +551,12 @@ export default function EventPage(queryString: any) {
           </button>
         </div>
       )}
-  
+
       {editModalOpen && (
         <div className="fixed inset-0 flex items-center bg-gray-900 bg-opacity-50 justify-center z-50">
           <form
             onSubmit={handleEventSubmit(onEditFormSubmit)}
-            className="bg-white rounded-lg p-6 px-10 w-1/2 space-y-4"
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 px-10 w-1/2 space-y-4"
           >
             <h3 className="text-2xl font-bold mb-4">Modifica Evento</h3>
             <Controller
@@ -606,12 +579,17 @@ export default function EventPage(queryString: any) {
               name="price"
               control={eventControl}
               defaultValue={0}
+              rules={{
+                validate: (value) => value >= 0 || "Il prezzo deve essere maggiore di zero",
+              }}
               render={({ field }) => (
                 <input
                   {...field}
                   type="number"
                   placeholder="Prezzo"
                   className="primary-input"
+                  step="0.01"
+                  min="0.00"
                 />
               )}
             />
@@ -680,7 +658,7 @@ export default function EventPage(queryString: any) {
               />
             </div>
             {imagePreview && (
-              <div className="mt-4">
+              <div className="mt-4 text-gray-900 dark:text-gray-100">
                 <p>Anteprima:</p>
                 <img
                   src={imagePreview}
@@ -690,13 +668,13 @@ export default function EventPage(queryString: any) {
               </div>
             )}
             <div className="flex justify-between">
-              <button type="submit" className="primary-button">
+              <button type="submit" className="primary-button bg-green-500 hover:bg-green-600">
                 Salva Modifiche
               </button>
               <button
                 type="button"
                 onClick={() => setEditModalOpen(false)}
-                className="secondary-button"
+                className="primary-button bg-red-500 hover:bg-red-600"
               >
                 Annulla
               </button>
@@ -706,5 +684,4 @@ export default function EventPage(queryString: any) {
       )}
     </main>
   );
-
 }

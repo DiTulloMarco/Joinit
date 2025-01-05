@@ -1,6 +1,7 @@
 import { Rating } from "./Rating";
 
 export type MyEvent = {
+    created_by: number;
     id: number;
     name: string;
     description: string;
