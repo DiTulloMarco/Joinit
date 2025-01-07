@@ -22,7 +22,7 @@ class CustomUser(AbstractUser):
     )
     city = models.CharField(_('City'), max_length=100, blank=True, null=True)
     nation = models.CharField(_('Nation'), max_length=100, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = 'email'
