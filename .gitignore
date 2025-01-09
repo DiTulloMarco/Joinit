@@ -4,3 +4,4 @@
 /joinit/*/migrations/__pycache__
 /emails/
 /joinit/media/
+.env
