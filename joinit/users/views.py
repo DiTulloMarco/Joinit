@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.schemas.openapi import AutoSchema
 from django.db.models import Q
@@ -15,34 +15,34 @@ from django.core.mail import EmailMessage
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_str, force_bytes
 from django.contrib.auth.base_user import BaseUserManager
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from django.utils import timezone
+
 
 
 from .models import CustomUser
 from . import  serializers
 from events.serializers import EventSerializer
 from users.token import token_generator
+from events.models import Event
 
 # Create your views here.  
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     schema = AutoSchema(tags=['Users'])
+    permission_classes=[AllowAny]
     serializer_class = serializers.CustomTokenObtainPairSerializer
 
 class CustomTokenRefreshView(TokenRefreshView):
     schema = AutoSchema(tags=['Users'])
+    permission_classes=[AllowAny]
     serializer_class = serializers.CustomTokenRefreshSerializer
 
 class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     serializer_class = serializers.UserEditSerializer
     permission_classes = [IsAuthenticated]
     schema = AutoSchema(tags=['Users'])
-    
-    def get_serializer_class(self):
-        if self.action == 'send_reset_password_email':
-            return serializers.SendPasswordRecoveryInfoSerializer
-        if self.action == 'set_new_password':
-            return serializers.SetNewPasswordSerializer
-        return serializers.UserEditSerializer
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
     def register(self, request):
@@ -50,7 +50,7 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         usr_srlz.is_valid(raise_exception=True)
         user = usr_srlz.save()
         token = RefreshToken.for_user(user)
-        return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': usr_srlz.data})
+        return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': usr_srlz.data}, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['GET'])
     def profile(self, request):
@@ -63,8 +63,12 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         user = request.user
         serializer = self.get_serializer(instance=user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        
-        if serializer.validated_data['profile_picture'] is None and user.profile_picture:
+
+        if 'profile_picture' in request.FILES:
+            user.profile_picture.delete(save=False)
+            user.profile_picture = request.FILES['profile_picture']
+
+        if 'profile_picture' in request.data and not request.data['profile_picture']:
             user.profile_picture.delete(save=False)
             user.profile_picture = None
 
@@ -94,14 +98,14 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         serialized = self.get_serializer(user)
         return Response({'token': {'access': str(token.access_token), 'refresh': str(token)}, 'user': serialized.data})
     
-    @action(detail=False, methods=['POST'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['POST'], permission_classes=[AllowAny], serializer_class=serializers.SendPasswordRecoveryInfoSerializer)
     def send_reset_password_email(self, request):
         try:
             user = CustomUser.objects.get(email=request.data['email'])
         except CustomUser.DoesNotExist:
             return Response({'Error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
         current_site = get_current_site(request)
-        mail_subject = 'Pinnalo - Reset Password'
+        mail_subject = 'JoinIt - Reset Password'
         message = render_to_string('reset_password.html', {
             'user': user,
             'domain': current_site.domain,  
@@ -117,34 +121,45 @@ class AuthViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
 
         return Response({'Message': 'Reset password link sent to your email'})
 
-    @action(detail=False, methods=['PUT'], permission_classes=[AllowAny])
+    @action(detail=False, methods=['PUT'], permission_classes=[AllowAny], serializer_class=serializers.SetNewPasswordSerializer)
     def set_new_password(self, request):
         try:
             uid = force_str(urlsafe_base64_decode(request.data['uidb64']))  
-            user = CustomUser.objects.get(id=uid)  
+            user = CustomUser.objects.get(id=uid)
         except(TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):  
-            user = None  
-            return Response({'Error': 'User not found'})
+            user = None
+            return Response({'Error': 'User not found'}, status=status.HTTP_400_BAD_REQUEST)
         if user is not None and token_generator.check_token(user, request.data['token']):  
             user.set_password(request.data['password'])  
             user.save()  
             return Response({'Your password has been set. Now you can login your account.'})  
         else:  
-            return Response({'Password reset link is invalid!'})  
+            return Response({'Error': 'Password reset link is invalid!'}, status=status.HTTP_400_BAD_REQUEST)  
     
     @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
     def user_events(self, request):
-        user = request.user
-        user_events = user.events.all().order_by('-event_date')
+        user_events = request.user.events.order_by('-event_date')
 
         page = self.paginate_queryset(user_events)
         if page is not None:
-            serializer = EventSerializer(page, many=True)
+            serializer = EventSerializer(page, many=True, context={'request': request})  
             return self.get_paginated_response(serializer.data)
-        
-        serializer = EventSerializer(user_events, many=True)
+
+        serializer = EventSerializer(user_events, many=True, context={'request': request})  
         return Response(serializer.data)
     
+    @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
+    def joined_events_past(self, request):
+        joined_events = request.user.joined_events.order_by('-event_date')
+
+        page = self.paginate_queryset(joined_events)
+        if page is not None:
+            serializer = EventSerializer(page, many=True, context={'request': request})  
+            return self.get_paginated_response(serializer.data)
+
+        serializer = EventSerializer(joined_events, many=True, context={'request': request})  
+        return Response(serializer.data)
+
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = serializers.UserBaseInfoSerializer
@@ -177,10 +192,22 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 
         page = self.paginate_queryset(user_events)
         if page is not None:
-            serializer = EventSerializer(page, many=True)
+            serializer = EventSerializer(page, many=True,context={'request': request})
             return self.get_paginated_response(serializer.data)
         
-        serializer = EventSerializer(user_events, many=True)
+        serializer = EventSerializer(user_events, many=True,context={'request': request})
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['GET'], permission_classes=[AllowAny])
+    def joined_events_past(self, request):
+        joined_events = request.user.joined_events.order_by('-event_date')
+
+        page = self.paginate_queryset(joined_events)
+        if page is not None:
+            serializer = EventSerializer(page, many=True, context={'request': request})  
+            return self.get_paginated_response(serializer.data)
+
+        serializer = EventSerializer(joined_events, many=True, context={'request': request})  
         return Response(serializer.data)
     
 class TokenRefreshView(TokenRefreshView):

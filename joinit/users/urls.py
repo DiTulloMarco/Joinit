@@ -4,7 +4,7 @@ from rest_framework import routers
 from . import views
 
 router = routers.SimpleRouter()
-router.register(r'', views.UserViewSet)
+router.register(r'', views.UserViewSet, basename="users")
 router.register(r'auth', views.AuthViewSet, basename="auth")
 
 urlpatterns = [

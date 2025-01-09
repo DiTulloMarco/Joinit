@@ -8,7 +8,6 @@ import { CreateEventFormType } from '@/types/CreateEventFormType';
 import { Category } from '@/types/Category';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from "@/components/ui/badge"
-import { on } from 'events';
 
 const url = process.env.API_URL
 
@@ -21,7 +20,6 @@ export default function CreateEventPage() {
 
   const fetchCategories = async () => {
     const response = await axios.get(`${url}/events/event_types/`);
-    console.log(response.data.map((v: string, i: number) => {return {id: i, name: v} as Category}))
     setCategories(response.data.map((v: string, i: number) => {return {id: i, name: v} as Category}));
   }
   
@@ -29,28 +27,48 @@ export default function CreateEventPage() {
     fetchCategories();
   }, [])
 
+  const getDefaultEventDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return date;
+  };
+
+  const getDefaultDeadline = () => {
+    const date = new Date();
+    date.setHours(date.getHours() + 3);
+    return date;
+  };
+
 
   const onSubmit: SubmitHandler<CreateEventFormType> = async (data) => {
     try {
-        data.created_by = Number(sessionStorage.getItem('userId'));
-        data.joined_by = [Number(sessionStorage.getItem('userId'))];
-        const response = await axios.post(`${url}/events/`, data);
+        const formattedTags = data.tags ? data.tags.split(",").map(tag => tag.trim()) : [];
+        const payload = {
+            ...data,
+            tags: formattedTags,
+        };
+
+        const response = await axios.post(`${url}/events/`, payload, {
+            headers: {
+                Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+            },
+        });
+        const eventId = response.data.id;
+        await axios.put(`${url}/events/${eventId}/join/`, {
+          userId: sessionStorage.getItem("userId"),
+        });
         router.push(AppRoutes.MY_EVENTS);
-        console.log( 'event created');
+        console.log('Event created successfully');
     } catch (error) {
         console.error(error);
-        console.error( 'event creation failed');
-    };
-  }
+        console.error('Event creation failed');
+    }
+};
 
-  const handleAddTag = (tag: string) => {
-    setTags([...tags, tag])
-  };
+const handleRemoveTag = (tag: string) => {
+  setTags(tags.filter((existingTag) => existingTag !== tag));
+};
   
-  const handleRemoveTag = (tag: string) => {
-    setTags([...tags].filter((value: string, index: number) => value !== tag));
-  }
-    
   return (
     <main className="flex-1 p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <h1 className="text-3xl font-bold mb-8 dark:text-white">Crea un Nuovo Evento</h1>
@@ -102,7 +120,7 @@ export default function CreateEventPage() {
               <Controller
                 name="event_date"
                 control={control}
-                defaultValue={new Date()}
+                defaultValue={getDefaultEventDate()}
                 rules={{
                   required: { value: true, message: 'La data è obbligatoria' },
                 }}
@@ -114,8 +132,26 @@ export default function CreateEventPage() {
                       id="event_date"
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
-                      value={field.value.toISOString().slice(0, 16)} // Convert Date to string
-                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                      value={(() => {
+                        const valueDate = new Date(field.value);                     
+                      
+                        const formattedDate = valueDate.toLocaleString("sv-SE", {
+                          timeZone: "Europe/Rome",
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        });
+
+                        const formattedForInput = formattedDate.replace(" ", "T");
+                        return formattedForInput;
+                      })()}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value ? new Date(e.target.value) : null); 
+                      }}
                       required
                       />
                       <p className="text-red-500">{error?.message}</p>
@@ -133,7 +169,7 @@ export default function CreateEventPage() {
               <Controller
                 name="participation_deadline"
                 control={control}
-                defaultValue={new Date()}
+                defaultValue={getDefaultDeadline()}
                 rules={{
                   required: { value: true, message: 'La data è obbligatoria' },
                   validate: (value: Date, data: CreateEventFormType) => {
@@ -151,7 +187,22 @@ export default function CreateEventPage() {
                       id="event_date"
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
-                      value={field.value.toISOString().slice(0, 16)} // Convert Date to string
+                      value={(() => {
+                        const valueDate = new Date(field.value);
+                      
+                        const formattedDate = valueDate.toLocaleString("sv-SE", {
+                          timeZone: "Europe/Rome",
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        });
+                      
+                        const formattedForInput = formattedDate.replace(" ", "T");
+                        return formattedForInput;
+                      })()}
                       onChange={(e) => field.onChange(new Date(e.target.value))}
                       required
                       />
@@ -181,7 +232,7 @@ export default function CreateEventPage() {
                     <input
                       type='text'
                       id="place"
-                      placeholder="Inserisci il luogo dell'evento"
+                      placeholder="Inserisci il luogo dell'evento, specifica la citta con il nome completo per un migliore posizionamento"
                       className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                       {...field} 
                       required
@@ -262,31 +313,27 @@ export default function CreateEventPage() {
               />
 
               <Controller
-                name="tags"
-                control={control}
-                render={({ field, fieldState: { error } }) => (
-                  <div>
-                    <label  
-                      htmlFor="tags" 
-                      className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
-                      >
-                      Tags
-                    </label>
-                    <input
-                      type='text'
-                      id="tags"
-                      placeholder="Inserisci i tag dell'evento"
-                      onChange={(e: any) => {
-                        if(!e.target.value.includes(" "))
-                          return;
-                        handleAddTag(e.target.value.trim())
-                        e.target.value = ""
-                      }}
-                      className='w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400'
-                    />
-                    <p className="text-red-500">{error?.message}</p>
-                  </div>
-                )}
+                  name="tags"
+                  control={control}
+                  defaultValue=""
+                  render={({ field, fieldState: { error } }) => (
+                      <div>
+                          <label
+                              htmlFor="tags"
+                              className="block text-gray-700 dark:text-gray-300 font-bold mb-2"
+                          >
+                              Tags (separati da virgole)
+                          </label>
+                          <input
+                              type="text"
+                              id="tags"
+                              placeholder="Inserisci i tag separati da virgole"
+                              className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                              {...field}
+                          />
+                          <p className="text-red-500">{error?.message}</p>
+                      </div>
+                  )}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

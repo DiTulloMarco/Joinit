@@ -9,7 +9,7 @@ export type CreateEventFormType = {
     joined_by: number[];
     created_by: number;
     category?: Category;
-    tags?: string[];
+    tags?: string;
     price?: number;
     image?: string;
     max_participants?: number;

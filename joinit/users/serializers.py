@@ -1,7 +1,9 @@
 from rest_framework.serializers import ModelSerializer, StringRelatedField
+from rest_framework import serializers 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import AccessToken
 from .models import CustomUser
+
 
 class UserSerializer(ModelSerializer):
     class Meta:
@@ -21,13 +23,19 @@ class UserEditSerializer(ModelSerializer):
         extra_kwargs = {
             'can_join': {'write_only': True},
             'can_post': {'write_only': True},
-            'can_comment': {'write_only': True}
+            'can_comment': {'write_only': True},
+            'profile_picture': {'required': False},
         }
+    def update(self, instance, validated_data):
+        profile_picture = validated_data.pop('profile_picture', None)
+        if profile_picture:
+            instance.profile_picture = profile_picture
+        return super().update(instance, validated_data)
 
 class UserBaseInfoSerializer(ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['first_name', 'last_name', 'birth_date', 'profile_picture']
+        fields = ['first_name', 'last_name', 'birth_date','city','nation', 'profile_picture', 'email']
 
 class SendPasswordRecoveryInfoSerializer(ModelSerializer):
     class Meta:
@@ -43,7 +51,6 @@ class GoogleUserSerializer(ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'email', 'first_name', 'last_name']
-
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -72,5 +79,3 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
                 data.update({'user': None})
 
         return data
-
-

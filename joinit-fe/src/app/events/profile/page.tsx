@@ -4,182 +4,287 @@ import { MyEvent } from '@/types/MyEvent';
 import EventCard from '@components/EventCard';
 import Image from 'next/image';
 import axios from 'axios';
-import { AppRoutes } from '@/enums/AppRoutes';
 import { User } from '@/types/User';
 import { EditProfileFormType } from '@/types/EditProfileFormType';
 import { Controller, SubmitHandler, useForm } from 'react-hook-form';
-import { headers } from 'next/headers';
 
 const url = process.env.API_URL;
 
 export default function ProfilePage() {
   const [userData, setUserData] = useState<User>({} as User);
   const [myEvents, setMyEvents] = useState<MyEvent[]>([]);
+  const [joinedEvents, setJoinedEvents] = useState<MyEvent[]>([]);
+  const [showMyEvents, setShowMyEvents] = useState<boolean>(true);
   const [modal, setModal] = useState<boolean>(false);
-  const { control, handleSubmit, formState: { errors } } = useForm<EditProfileFormType>()
-
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<EditProfileFormType>();
 
   const toggleModal = () => {
     setModal(!modal);
   };
-  
-  async function fetchUser() {
-    try{
 
-      const id = sessionStorage.getItem('userId');
+  const fetchUser = async () => {
+    try {
       const response = await axios.get(`${url}/users/auth/profile/`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-        }
+        },
       });
       setUserData(response.data);
-    }catch{
-      throw new Error('Failed to fetch user data');
+    } catch (error) {
+      console.error('Errore durante il fetch del profilo utente:', error);
     }
-  }
+  };
 
-  async function fetchEvents() {
-    try{
-      const id = sessionStorage.getItem('userId');
-      const response = await axios.get(`${url}/users/auth/user_events/`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-          }
-        }
-      );
-      setMyEvents(response.data.results);
-    }catch{
-      throw new Error('Failed to fetch user data');
+  const fetchEvents = async (page: number) => {
+    try {
+      const response = await axios.get(`${url}/users/auth/user_events/`, {
+        params: { page ,ordering: '-creation_ts'},
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+      });
+
+      setMyEvents(response.data.results || []);
+      setTotalPages(Math.ceil(response.data.count / 10));
+    } catch (error) {
+      console.error('Errore durante il fetch degli eventi:', error);
     }
-  }
+  };
 
+  const fetchJoinedEvents = async (page: number) => { 
+    try {
+      const response = await axios.get(`${url}/users/auth/joined_events_past/`, {
+        params: { page ,ordering: '-creation_ts'},
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+      });
+      setJoinedEvents(response.data.results || []);
+      setTotalPages(Math.ceil(response.data.count / 10));
+    } catch (error) {
+      console.error('Failed to fetch the events joined by the user', error);
+    }
+  };
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchUser();
-    fetchEvents();
-  }, []);
+    fetchEvents(currentPage);
+    fetchJoinedEvents(currentPage);
+  }, [currentPage]);
+  
+  const goToPage = (page: number) => {
+    if (page > 0 && page <= totalPages) {
+      setCurrentPage(page);
+      if (showMyEvents) {
+        fetchEvents(page);
+      } else {
+        fetchJoinedEvents(page);
+      }
+    }
+  };
+  
 
   const onSubmit: SubmitHandler<EditProfileFormType> = async (data) => {
     try {
-        const response = await axios.patch(`${url}/users/auth/profile/`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
-          },
-          body: data
-        });
-        console.log(response.data);
-        setUserData({...userData, ...response.data});
-        toggleModal();
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value);
+        }
+      });
+
+      const response = await axios.patch(`${url}/users/auth/profile/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${sessionStorage.getItem('authToken')}`,
+        },
+      });
+
+      console.log('Profile updated:', response.data);
+      setUserData({ ...userData, ...response.data });
+      toggleModal();
     } catch (error) {
-        console.error(error);
-        console.error('update failed');
-    };
+      console.error('Errore durante l\'aggiornamento del profilo:', error);
+    }
   };
 
   return (
     <main className="flex-1 p-8">
-      {!userData && <p>Loading user data...</p>}
-      {userData &&
-        <div className="flex items-center justify-start mb-8">
-          <Image
-            src={userData.profile_picture ? userData.profile_picture : "https://via.placeholder.com/50"}
-            width={50}
-            height={50}
-            alt="Profile"
-            className="w-12 h-12 rounded-full object-cover mr-4"
-          />
-          <div>
-            <h1 className="text-4xl font-bold">{userData.first_name} {userData.last_name}</h1>
-            <p className="text-gray-600">
-              {userData.birth_date &&
-                Math.floor((new Date().getTime() - new Date(userData.birth_date).getTime()) / 31557600000)
-              } - {userData.city}, {userData.nation}
-            </p>
-          </div>
-          <div className='ml-11'>
-            <button onClick={toggleModal}>
-              <span className="material-icons">edit</span>
-            </button>
-          </div>
-        </div>
-      }
-        <h2 className="text-2xl font-bold mb-4">I Tuoi Eventi</h2>
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {myEvents.map(event => (
-            <EventCard
-            key={event.id}
-            event={event}
-            canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!))}
-          />
-          ))}
-        </section>
-
-        {modal && (
-          <div onSubmit={handleSubmit(onSubmit)} className="fixed inset-0 flex items-center bg-gray-900 bg-opacity-50 justify-center z-40">
-            <form className="bg-white rounded-lg p-6 px-10 w-1/4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold mb-4">Modifica Profilo</h2>
-                <button type="button" onClick={toggleModal} className="-mr-6 -mt-10">
-                  <span className="material-icons">close</span>
-                </button>
-              </div>
-              <Controller
-                name="birth_date"
-                control={control}
-                defaultValue={userData.birth_date}
-                render={({ field }) => (
-                  <div>
-                    <label htmlFor="birth_date">Data di Nascita</label>
-                    <input 
-                      type="date"
-                      {...field}
-                      className="w-full mb-4 p-2 border border-gray-300 rounded"
-                    />
-                  </div>
-                )}
-                
-              />
-              <Controller
-                name="city"
-                control={control}
-                defaultValue={userData.city}
-                render={({ field }) => (
-                  <div>
-                    <label htmlFor="birth_date">Città di residenza</label> 
-                    <input
-                      type="text"
-                      {...field}
-                      className="w-full mb-4 p-2 border border-gray-300 rounded"
-                      />
-                  </div>
-                )}
-              />
-              <Controller
-                name="nation"
-                control={control}
-                defaultValue={userData.nation}
-                render={({ field }) => (
-                  <div>
-                    <label htmlFor="birth_date">Nazione di residenza</label>
-                    <input
-                      type="text"
-                      {...field}
-                      className="w-full mb-4 p-2 border border-gray-300 rounded"
-                      />
-                  </div>
-                )}
-              />
-              <button
-                type="submit" className="primary-button">
-                Conferma
+      {!userData ? (
+        <p>Loading user data...</p>
+      ) : (
+        <>
+          <div className="flex items-center justify-start mb-8">
+            <Image
+              src={userData.profile_picture ? userData.profile_picture : "https://via.placeholder.com/50"}
+              width={160}
+              height={160}
+              alt="Profile"
+              className="w-40 h-40 rounded-lg overflow-hidden border-4 border-gray-300 shadow-lg mr-6 flex items-center justify-center"
+            />
+            <div>
+              <h1 className="text-4xl font-bold">{userData.first_name} {userData.last_name}</h1>
+              <p className="text-gray-600">
+                {userData.birth_date &&
+                  Math.floor((new Date().getTime() - new Date(userData.birth_date).getTime()) / 31557600000)
+                } - {userData.city}, {userData.nation}
+              </p>
+            </div>
+            <div className='ml-11'>
+              <button onClick={toggleModal}>
+                <span className="material-icons">edit</span>
               </button>
-            </form>
+            </div>
           </div>
-        )}
+
+          <h2 className="text-2xl mb-4">
+  {showMyEvents ? (
+    <>
+      <b>I Tuoi Eventi</b>&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;
+      <button className="hover:underline" onClick={() => setShowMyEvents(false)}>
+        Storico Eventi
+      </button>
+    </>
+  ) : (
+    <>
+      <button className="hover:underline" onClick={() => setShowMyEvents(true)}>
+        I Tuoi Eventi
+      </button>
+      &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;<b>Storico Eventi</b>
+    </>
+  )}
+</h2>
+
+<section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {(showMyEvents ? myEvents : joinedEvents).map(event => (
+    <EventCard
+      key={event.id}
+      event={event}
+      canJoin={!event.joined_by.includes(parseInt(sessionStorage.getItem('userId')!, 10))}
+      canInteract={!event.cancelled || event.created_by === parseInt(sessionStorage.getItem('userId') || '0')}
+    />
+  ))}
+</section>
+
+<div className="flex justify-center items-center mt-6 space-x-2">
+  <button
+    onClick={() => goToPage(currentPage - 1)}
+    disabled={currentPage === 1}
+    className={`px-4 py-2 rounded ${
+      currentPage === 1
+        ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+        : 'bg-blue-500 text-white hover:bg-blue-600'
+    }`}
+  >
+    &lt;
+  </button>
+  {Array.from({ length: totalPages }, (_, index) => (
+    <button
+      key={index + 1}
+      onClick={() => goToPage(index + 1)}
+      className={`px-4 py-2 rounded ${
+        currentPage === index + 1
+          ? 'bg-blue-500 text-white'
+          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+      }`}
+    >
+      {index + 1}
+    </button>
+  ))}
+  <button
+    onClick={() => goToPage(currentPage + 1)}
+    disabled={currentPage === totalPages}
+    className={`px-4 py-2 rounded ${
+      currentPage === totalPages
+        ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+        : 'bg-blue-500 text-white hover:bg-blue-600'
+    }`}
+  >
+    &gt;
+  </button>
+</div>
+
+          {modal && (
+            <div className="fixed inset-0 flex items-center bg-gray-900 bg-opacity-50 justify-center z-40">
+              <form onSubmit={handleSubmit(onSubmit)} className="bg-white dark:bg-gray-800 dark:text-gray-100 rounded-lg shadow-lg p-6 w-full max-w-3xl relative">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold mb-4">Modifica Profilo</h2>
+                  <button type="button" onClick={toggleModal} className="-mr-6 -mt-10">
+                    <span className="material-icons">close</span>
+                  </button>
+                </div>
+                <Controller
+                  name="birth_date"
+                  control={control}
+                  defaultValue={userData.birth_date ?? ''}
+                  render={({ field }) => (
+                    <div>
+                      <label htmlFor="birth_date">Data di Nascita</label>
+                      <input
+                        type="date"
+                        {...field}
+                        className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                      />
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="city"
+                  control={control}
+                  defaultValue={userData.city ?? ''}
+                  render={({ field }) => (
+                    <div>
+                      <label htmlFor="city">Città di Residenza</label>
+                      <input
+                        type="text"
+                        {...field}
+                        className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                      />
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="nation"
+                  control={control}
+                  defaultValue={userData.nation ?? ''}
+                  render={({ field }) => (
+                    <div>
+                      <label htmlFor="nation">Nazione</label>
+                      <input
+                        type="text"
+                        {...field}
+                        className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                      />
+                    </div>
+                  )}
+                />
+                <div>
+                  <label htmlFor="profile_picture">Foto Profilo</label>
+                  <input
+                    type="file"
+                    id="profile_picture"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setValue('profile_picture', e.target.files[0]);
+                      }
+                    }}
+                    className="w-full p-2 border rounded bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                  />
+                </div>
+                <button type="submit" className="primary-button text-center bg-green-500 hover:bg-green-600">
+                  Conferma
+                </button>
+              </form>
+            </div>
+          )}
+        </>
+      )}
     </main>
   );
 }
