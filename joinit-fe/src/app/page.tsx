@@ -42,7 +42,7 @@ export default async function Home() {
       {/* Image Grid Section */}
       <section className="container mx-auto py-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 px-4">
         {(() => {
-          const images = ['landpage1.jpg', 'landpage2.jpg', 'landpage1.jpg', 'landpage1.jpg', 'landpage1.jpg',  'landpage1.jpg'];
+          const images = ['landpage1.jpg', 'landpage2.jpg', 'landpage3.jpg', 'landpage4.jpg', 'landpage5.jpg',  'landpage6.jpg'];
           const elements = [];
           for (let i = 0; i < images.length; i++) {
             elements.push(

@@ -1,5 +1,5 @@
 import datetime
-import time_machine
+import time_machine # type: ignore
 
 from django.urls import reverse
 from django.utils import timezone

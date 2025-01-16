@@ -29,7 +29,12 @@ class EventAdmin(admin.ModelAdmin):
             return [f.name for f in Event._meta.get_fields()]
         
 
-@admin.register(Rating)
+class RatingProxy(Rating):
+    class Meta:
+        proxy = True
+
+
+@admin.register(RatingProxy)
 class RatingAdmin(admin.ModelAdmin):
     list_display = ('event', 'user', 'get_user_email', 'rating', 'review', 'created_at')
     search_fields = ('user__email', 'event__name', 'review')
@@ -37,12 +42,12 @@ class RatingAdmin(admin.ModelAdmin):
 
     def get_user_email(self, obj):
         return obj.user.email
-    
+
     get_user_email.short_description = 'User Email'
     get_user_email.admin_order_field = 'user__email'
 
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_staff or request.user.is_superuser:
-                return [f.name for f in Event._meta.get_fields() if f.name is not 'cancelled']
+            return [f.name for f in Rating._meta.get_fields() if f.name != 'cancelled']
         else:
-            return [f.name for f in Event._meta.get_fields()]
+            return [f.name for f in Rating._meta.get_fields()]

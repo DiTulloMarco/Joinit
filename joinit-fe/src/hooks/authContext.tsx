@@ -4,6 +4,7 @@ import { AuthContextProp } from '../interfaces/Auth';
 import axios from 'axios';
 
 import { AppRoutes } from '@/enums/AppRoutes';
+import { useRouter } from 'next/navigation';
 
 const url = process.env.API_URL;
 
@@ -19,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const router = useRouter();
 
   const getAuthTokenFromRefresh = async ( refreshToken: string ) => {
     try {
@@ -33,6 +35,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   useEffect(() => {
     if (typeof window !== 'undefined'){
+      if (sessionStorage.getItem('authToken')) {
+        setIsAuthenticated(true);
+        return;
+      }
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         getAuthTokenFromRefresh(refreshToken).then((data) => {
@@ -49,6 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthToken(token);
       setUserId(userId);
       setIsAuthenticated(true);
+      router.push(AppRoutes.EVENTS);
     }
   };
 
@@ -59,6 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthToken(null);
       setUserId(null);
       setIsAuthenticated(false);
+      router.push(AppRoutes.LOGIN);
     }
   };
 
