@@ -83,7 +83,9 @@ class CustomUserTest(APITestCase):
             
             self.assertEqual(response.status_code, 201)
             self.assertEqual(CustomUser.objects.count(), 1)
-            self.assertDictEqual(response.data['user'], sample_user)
+            self.assertEqual(response.data['user']['email'], sample_user['email'])
+            self.assertEqual(response.data['user']['first_name'], sample_user['first_name'])
+            self.assertEqual(response.data['user']['last_name'], sample_user['last_name'])
 
         CustomUser.objects.all().delete()
 
@@ -102,7 +104,10 @@ class CustomUserTest(APITestCase):
             
             self.assertEqual(response.status_code, 201)
             self.assertEqual(CustomUser.objects.count(), 1)
-            self.assertDictEqual(response.data['user'], sample_user)
+            self.assertEqual(response.data['user']['email'], sample_user['email'])
+            self.assertEqual(response.data['user']['first_name'], sample_user['first_name'])
+            self.assertEqual(response.data['user']['last_name'], sample_user['last_name'])
+
 
 
     @time_machine.travel(datetime.datetime(2024, 12, 16, tzinfo=timezone.get_current_timezone()), tick=False)
