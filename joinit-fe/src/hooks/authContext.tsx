@@ -63,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window !== 'undefined'){
       sessionStorage.removeItem('authToken');
       sessionStorage.removeItem('userId');
+      localStorage.removeItem('refreshToken');
       setAuthToken(null);
       setUserId(null);
       setIsAuthenticated(false);
